@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#3B82F6" />
+  
+  <!-- SEO Meta Tags -->
+  <title>A/B Testing Pro - Professional Statistical Analysis Tool</title>
+  <meta name="description" content="Professional A/B testing tool with ML predictions, Bayesian analysis, and ROI calculations. Built for data scientists and growth teams." />
+  <meta name="keywords" content="ab testing, statistics, bayesian analysis, machine learning, data science, conversion optimization, roi analysis" />
+  <meta name="author" content="A/B Testing Pro Team" />
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://yourusername.github.io/ab-testing-pro/" />
+  <meta property="og:title" content="A/B Testing Pro - Professional Statistical Analysis" />
+  <meta property="og:description" content="Advanced A/B testing tool with ML predictions, Bayesian methods, and business ROI analysis." />
+  <meta property="og:image" content="%PUBLIC_URL%/social-preview.png" />
+  
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:url" content="https://yourusername.github.io/ab-testing-pro/" />
+  <meta property="twitter:title" content="A/B Testing Pro - Professional Statistical Analysis" />
+  <meta property="twitter:description" content="Advanced A/B testing tool with ML predictions, Bayesian methods, and business ROI analysis." />
+  <meta property="twitter:image" content="%PUBLIC_URL%/social-preview.png" />
+  
+  <!-- PWA Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="A/B Testing Pro" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="application-name" content="A/B Testing Pro" />
+  
+  <!-- Apple Touch Icons -->
+  <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/favicon-16x16.png" />
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+  
+  <!-- Preconnect to external resources -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  
+  <!-- Critical CSS for performance -->
+  <style>
+    /* Critical CSS for initial paint */
+    * {
+      box-sizing: border-box;
+    }
+    
+    body {
+      margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background-color: #f8fafc;
+      color: #1f2937;
+    }
+    
+    #root {
+      min-height: 100vh;
+    }
+    
+    /* Loading spinner */
+    .loading-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      flex-direction: column;
+    }
+    
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid #e5e7eb;
+      border-top: 4px solid #3b82f6;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .loading-text {
+      margin-top: 20px;
+      color: #6b7280;
+      font-size: 18px;
+      font-weight: 500;
+    }
+    
+    /* Hide loading when app loads */
+    .app-loaded .loading-container {
+      display: none;
+    }
+  </style>
+  
+  <!-- Structured Data for SEO -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "A/B Testing Pro",
+    "description": "Professional A/B testing tool with ML predictions, Bayesian analysis, and ROI calculations",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web Browser",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "author": {
+      "@type": "Organization",
+      "name": "A/B Testing Pro Team"
+    },
+    "featureList": [
+      "Statistical Analysis",
+      "Bayesian Methods", 
+      "Machine Learning Predictions",
+      "ROI Calculations",
+      "Real-time Analytics",
+      "Export Capabilities"
+    ]
+  }
+  </script>
+</head>
+<body>
+  <noscript>
+    <div style="padding: 20px; text-align: center; background: #fee2e2; color: #991b1b; border-radius: 8px; margin: 20px;">
+      <h2>JavaScript Required</h2>
+      <p>A/B Testing Pro requires JavaScript to run. Please enable JavaScript in your browser and reload the page.</p>
+    </div>
+  </noscript>
+  
+  <!-- Loading Screen -->
+  <div class="loading-container" id="loading">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Loading A/B Testing Pro...</div>
+  </div>
+  
+  <!-- Main App Container -->
+  <div id="root"></div>
+  
+  <!-- PWA Install Button -->
+  <button id="install-button" style="display: none; position: fixed; bottom: 20px; right: 20px; background: #3b82f6; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); z-index: 1000;">
+    📱 Install App
+  </button>
+  
+  <!-- Performance Monitoring -->
+  <script>
+    // Mark when app starts loading
+    performance.mark('app-start');
+    
+    // Hide loading screen when React loads
+    window.addEventListener('load', function() {
+      const loading = document.getElementById('loading');
+      if (loading) {
+        setTimeout(() => {
+          loading.style.opacity = '0';
+          loading.style.transition = 'opacity 0.3s ease';
+          setTimeout(() => {
+            loading.style.display = 'none';
+            document.body.classList.add('app-loaded');
+          }, 300);
+        }, 500);
+      }
+      
+      // Mark app as loaded
+      performance.mark('app-loaded');
+      performance.measure('app-load-time', 'app-start', 'app-loaded');
+    });
+    
+    // Error boundary for uncaught errors
+    window.addEventListener('error', function(event) {
+      console.error('Global error:', event.error);
+      
+      // Send to analytics if available
+      if (window.gtag) {
+        window.gtag('event', 'exception', {
+          description: event.error?.message || 'Unknown error',
+          fatal: false
+        });
+      }
+    });
+    
+    // Unhandled promise rejections
+    window.addEventListener('unhandledrejection', function(event) {
+      console.error('Unhandled promise rejection:', event.reason);
+      
+      if (window.gtag) {
+        window.gtag('event', 'exception', {
+          description: 'Unhandled promise rejection: ' + (event.reason?.message || event.reason),
+          fatal: false
+        });
+      }
+    });
+  </script>
+  
+  <!-- Google Analytics (replace with your GA4 ID) -->
+  <!-- 
+  <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'GA_MEASUREMENT_ID');
+  </script>
+  -->
+</body>
+</html>
