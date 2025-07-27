@@ -1096,7 +1096,7 @@ const ABTestingPro: React.FC = () => {
          <div className={`border-t mt-8 pt-8 text-center text-sm ${
            isDarkMode ? 'border-gray-700 text-gray-400' : 'border-gray-200 text-gray-600'
          }`}>
-           <p>© 2024 A/B Testing Pro. Made with ❤️ for data scientists and growth teams.</p>
+           <p>© 2025 A/B Testing Pro. Made with ❤️ for data scientists and growth teams.</p>
          </div>
        </div>
      </footer>
