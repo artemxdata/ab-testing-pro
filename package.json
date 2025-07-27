@@ -1,0 +1,226 @@
+{
+  "name": "ab-testing-pro",
+  "version": "2.0.0",
+  "private": false,
+  "description": "🎯 Professional A/B Testing Tool with ML Predictions, Bayesian Analysis & ROI Calculations",
+  "keywords": [
+    "ab-testing",
+    "statistics",
+    "bayesian",
+    "machine-learning",
+    "data-science",
+    "analytics",
+    "conversion-optimization",
+    "react",
+    "typescript",
+    "tailwind",
+    "pwa",
+    "roi-analysis",
+    "statistical-analysis"
+  ],
+  "author": {
+    "name": "Your Name",
+    "email": "your.email@example.com",
+    "url": "https://github.com/yourusername"
+  },
+  "homepage": "https://yourusername.github.io/ab-testing-pro",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/ab-testing-pro.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/ab-testing-pro/issues"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "dependencies": {
+    "@testing-library/jest-dom": "^5.16.5",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^13.5.0",
+    "@types/jest": "^27.5.2",
+    "@types/node": "^16.18.0",
+    "@types/react": "^18.0.25",
+    "@types/react-dom": "^18.0.9",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^2.5.1",
+    "lucide-react": "^0.263.1",
+    "mathjs": "^11.11.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1",
+    "recharts": "^2.8.0",
+    "typescript": "^4.9.4",
+    "web-vitals": "^3.1.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/jspdf": "^2.3.0",
+    "@typescript-eslint/eslint-plugin": "^5.45.0",
+    "@typescript-eslint/parser": "^5.45.0",
+    "autoprefixer": "^10.4.13",
+    "eslint": "^8.28.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-react": "^7.31.11",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "gh-pages": "^4.0.0",
+    "postcss": "^8.4.19",
+    "prettier": "^2.8.0",
+    "source-map-explorer": "^2.5.3",
+    "tailwindcss": "^3.2.4",
+    "workbox-cli": "^6.5.4"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build && npm run build:sitemap",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build",
+    "build:sitemap": "node scripts/generate-sitemap.js",
+    "analyze": "npm run build && npx source-map-explorer 'build/static/js/*.js'",
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx --fix",
+    "lint:check": "eslint src --ext .js,.jsx,.ts,.tsx",
+    "format": "prettier --write src/**/*.{js,jsx,ts,tsx,css,md}",
+    "format:check": "prettier --check src/**/*.{js,jsx,ts,tsx,css,md}",
+    "type-check": "tsc --noEmit",
+    "test:coverage": "npm run test -- --coverage --watchAll=false",
+    "test:ci": "npm run test:coverage && npm run lint:check && npm run type-check",
+    "build:analyze": "npm run build && npm run analyze",
+    "serve": "npx serve -s build -l 3000",
+    "clean": "rm -rf build node_modules package-lock.json",
+    "reinstall": "npm run clean && npm install",
+    "update-deps": "npx npm-check-updates -u && npm install",
+    "generate-icons": "node scripts/generate-icons.js",
+    "optimize-images": "node scripts/optimize-images.js",
+    "build:prod": "GENERATE_SOURCEMAP=false npm run build",
+    "lighthouse": "npx lighthouse http://localhost:3000 --output-path=./lighthouse-report.html --view",
+    "sw:generate": "npx workbox generateSW workbox-config.js"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest",
+      "@typescript-eslint/recommended",
+      "prettier"
+    ],
+    "plugins": [
+      "@typescript-eslint",
+      "prettier"
+    ],
+    "rules": {
+      "prettier/prettier": "error",
+      "@typescript-eslint/no-unused-vars": "error",
+      "@typescript-eslint/explicit-function-return-type": "off",
+      "@typescript-eslint/explicit-module-boundary-types": "off",
+      "@typescript-eslint/no-explicit-any": "warn",
+      "react-hooks/exhaustive-deps": "warn",
+      "no-console": "warn"
+    }
+  },
+  "prettier": {
+    "semi": true,
+    "trailingComma": "es5",
+    "singleQuote": true,
+    "printWidth": 100,
+    "tabWidth": 2,
+    "useTabs": false
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "jest": {
+    "collectCoverageFrom": [
+      "src/**/*.{js,jsx,ts,tsx}",
+      "!src/index.tsx",
+      "!src/serviceWorker.ts",
+      "!src/**/*.d.ts"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 70,
+        "functions": 70,
+        "lines": 70,
+        "statements": 70
+      }
+    }
+  },
+  "workbox": {
+    "swSrc": "public/sw.js",
+    "swDest": "build/sw.js"
+  },
+  "pwa": {
+    "name": "A/B Testing Pro",
+    "short_name": "A/B Testing Pro",
+    "description": "Professional A/B testing tool with ML predictions and statistical analysis",
+    "theme_color": "#3B82F6",
+    "background_color": "#F8FAFC",
+    "display": "standalone",
+    "orientation": "portrait",
+    "start_url": "/"
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/yourusername"
+  },
+  "contributors": [
+    {
+      "name": "Your Name",
+      "email": "your.email@example.com",
+      "url": "https://github.com/yourusername"
+    }
+  ],
+  "files": [
+    "build/**/*",
+    "public/**/*",
+    "src/**/*",
+    "README.md",
+    "package.json"
+  ],
+  "directories": {
+    "doc": "docs",
+    "test": "src/__tests__"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run lint:check && npm run type-check",
+      "pre-push": "npm run test:ci"
+    }
+  },
+  "babel": {
+    "presets": [
+      [
+        "@babel/preset-env",
+        {
+          "targets": {
+            "browsers": [
+              ">0.2%",
+              "not dead",
+              "not ie <= 11",
+              "not op_mini all"
+            ]
+          }
+        }
+      ],
+      "@babel/preset-react",
+      "@babel/preset-typescript"
+    ]
+  }
+}
