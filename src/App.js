@@ -1,4 +1,3 @@
-// src/App.js - Main Application Component
 import React from 'react';
 import ABTestingPro from './components/ABTestingPro';
 import './index.css';
