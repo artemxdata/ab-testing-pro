@@ -57,7 +57,6 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@types/jspdf": "^2.3.0",
     "@typescript-eslint/eslint-plugin": "^5.45.0",
     "@typescript-eslint/parser": "^5.45.0",
     "autoprefixer": "^10.4.13",
