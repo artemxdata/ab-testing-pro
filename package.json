@@ -57,17 +57,12 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^5.45.0",
-    "@typescript-eslint/parser": "^5.45.0",
     "autoprefixer": "^10.4.13",
     "eslint": "^8.28.0",
-    "eslint-config-prettier": "^8.5.0",
-    "eslint-plugin-prettier": "^4.2.1",
     "eslint-plugin-react": "^7.31.11",
     "eslint-plugin-react-hooks": "^4.6.0",
     "gh-pages": "^4.0.0",
     "postcss": "^8.4.19",
-    "prettier": "^2.8.0",
     "source-map-explorer": "^2.5.3",
     "tailwindcss": "^3.2.4"
   },
@@ -79,14 +74,6 @@
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build",
     "analyze": "npm run build && npx source-map-explorer 'build/static/js/*.js'",
-    "lint": "eslint src --ext .js,.jsx,.ts,.tsx --fix",
-    "lint:check": "eslint src --ext .js,.jsx,.ts,.tsx",
-    "format": "prettier --write src/**/*.{js,jsx,ts,tsx,css,md}",
-    "format:check": "prettier --check src/**/*.{js,jsx,ts,tsx,css,md}",
-    "type-check": "tsc --noEmit",
-    "test:coverage": "npm run test -- --coverage --watchAll=false",
-    "test:ci": "npm run test:coverage && npm run lint:check && npm run type-check",
-    "build:analyze": "npm run build && npm run analyze",
     "serve": "npx serve -s build -l 3000",
     "clean": "rm -rf build node_modules package-lock.json",
     "reinstall": "npm run clean && npm install",
@@ -95,31 +82,8 @@
   "eslintConfig": {
     "extends": [
       "react-app",
-      "react-app/jest",
-      "@typescript-eslint/recommended",
-      "prettier"
-    ],
-    "plugins": [
-      "@typescript-eslint",
-      "prettier"
-    ],
-    "rules": {
-      "prettier/prettier": "error",
-      "@typescript-eslint/no-unused-vars": "error",
-      "@typescript-eslint/explicit-function-return-type": "off",
-      "@typescript-eslint/explicit-module-boundary-types": "off",
-      "@typescript-eslint/no-explicit-any": "warn",
-      "react-hooks/exhaustive-deps": "warn",
-      "no-console": "warn"
-    }
-  },
-  "prettier": {
-    "semi": true,
-    "trailingComma": "es5",
-    "singleQuote": true,
-    "printWidth": 100,
-    "tabWidth": 2,
-    "useTabs": false
+      "react-app/jest"
+    ]
   },
   "browserslist": {
     "production": [
