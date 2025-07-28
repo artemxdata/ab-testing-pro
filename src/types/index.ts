@@ -1,4 +1,4 @@
-// Core Types for A/B Testing Pro
+// src/types/index.ts - TypeScript type definitions for A/B Testing Pro
 
 export interface TestConfiguration {
   baselineRate: number;
@@ -10,8 +10,8 @@ export interface TestConfiguration {
   dailyTraffic: number;
   costPerVisitor: number;
   revenuePerConversion: number;
-  industry: IndustryType;
-  testType: TestType;
+  industry: string;
+  testType: string;
 }
 
 export interface TestData {
@@ -27,74 +27,50 @@ export interface StatisticalResults {
   lift: number;
   pValue: number;
   zScore: number;
-  isSignificant: boolean;
+  standardError: number;
   confidenceInterval: [number, number];
+  isSignificant: boolean;
   effectSize: number;
+  requiredSampleSize: number;
 }
 
 export interface BayesianResults {
   probabilityBWins: number;
   expectedLift: number;
-  posteriorA: BetaDistribution;
-  posteriorB: BetaDistribution;
-  expectedLoss?: number;
-}
-
-export interface BetaDistribution {
-  alpha: number;
-  beta: number;
+  credibleInterval: [number, number];
+  posteriorA: {
+    alpha: number;
+    beta: number;
+  };
+  posteriorB: {
+    alpha: number;
+    beta: number;
+  };
 }
 
 export interface ROIAnalysis {
   totalCost: number;
   additionalRevenue: number;
+  netPresentValue: number;
   roi: number;
   paybackPeriod: number;
   annualizedRevenue: number;
-  netPresentValue: number;
+  riskAdjustedReturn: number;
 }
 
 export interface MLPredictions {
   probabilityOfSuccess: number;
   expectedLift: number;
   confidenceScore: number;
-  recommendation: RecommendationType;
   insights: string[];
-  riskFactors: RiskFactor[];
+  riskFactors: Array<{
+    factor: string;
+    level: 'low' | 'medium' | 'high';
+    description: string;
+  }>;
+  recommendations: string[];
 }
 
-export interface RiskFactor {
-  factor: string;
-  level: RiskLevel;
-  score?: number;
-}
-
-export interface RealTimeMetrics {
-  activeVisitors: number;
-  testsRunning: number;
-  totalRevenue: number;
-  avgConversion: number;
-  topVariant: string;
-  lastUpdate: Date;
-}
-
-export interface Notification {
-  id: number;
-  type: NotificationType;
-  title: string;
-  message: string;
-  time: string;
-  action?: string;
-}
-
-// Enums
-export type IndustryType = 'ecommerce' | 'saas' | 'media' | 'fintech';
-export type TestType = 'conversion' | 'revenue' | 'engagement' | 'retention';
-export type RecommendationType = 'implement' | 'reject' | 'continue';
-export type RiskLevel = 'low' | 'medium' | 'high';
-export type NotificationType = 'success' | 'warning' | 'error' | 'info';
-
-// Chart Types
 export interface ChartDataPoint {
   day: number;
   control: number;
@@ -115,3 +91,26 @@ export interface PerformanceMetric {
   score: number;
   target: number;
 }
+
+export interface Notification {
+  id: number;
+  type: 'success' | 'warning' | 'info' | 'error';
+  title: string;
+  message: string;
+  time: string;
+}
+
+export interface RealTimeMetrics {
+  activeVisitors: number;
+  testsRunning: number;
+  totalRevenue: number;
+  avgConversion: number;
+  topVariant: string;
+  lastUpdate: Date;
+}
+
+// Export utility types
+export type TestType = 'conversion' | 'revenue' | 'engagement' | 'retention';
+export type Industry = 'ecommerce' | 'saas' | 'media' | 'finance' | 'education' | 'other';
+export type ConfidenceLevel = 0.90 | 0.95 | 0.99;
+export type PowerLevel = 0.70 | 0.80 | 0.90;
