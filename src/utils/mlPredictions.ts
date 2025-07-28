@@ -1,283 +1,382 @@
-// src/utils/mlPredictions.ts - Machine Learning Predictions
-import { TestConfiguration, MLPredictions, RiskFactor } from '../types';
+// src/utils/mlPredictions.ts - Machine Learning prediction utilities
+import { TestConfiguration, MLPredictions } from '../types';
 
-/**
- * Machine Learning predictor for A/B test outcomes
- */
 export class MLPredictor {
-  
   /**
-   * Generate ML-powered predictions for test success
+   * Generate ML predictions for A/B test success
    */
   static async generatePredictions(config: TestConfiguration): Promise<MLPredictions> {
-    // Simulate ML API processing time
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const industryFactors = this.getIndustryFactors(config.industry);
-    const effectSizeScore = this.calculateEffectSizeScore(config.minimumDetectableEffect);
-    const sampleSizeScore = this.calculateSampleSizeScore(config);
-    const powerScore = config.power;
-    
-    // Composite probability calculation
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    const {
+      baselineRate,
+      minimumDetectableEffect,
+      alpha,
+      power,
+      testDuration,
+      dailyTraffic,
+      industry,
+      testType
+    } = config;
+
+    // Calculate various prediction factors
+    const effectSizeScore = this.calculateEffectSizeScore(minimumDetectableEffect);
+    const sampleSizeScore = this.calculateSampleSizeScore(dailyTraffic, testDuration);
+    const industryScore = this.getIndustryScore(industry);
+    const testTypeScore = this.getTestTypeScore(testType);
+    const statisticalRigorScore = this.calculateStatisticalRigor(alpha, power);
+
+    // Weighted probability calculation
     const probabilityOfSuccess = Math.min(0.98, Math.max(0.05,
-      industryFactors.successRate * 0.3 +
       effectSizeScore * 0.25 +
-      sampleSizeScore * 0.25 +
-      powerScore * 0.2
+      sampleSizeScore * 0.20 +
+      industryScore * 0.15 +
+      testTypeScore * 0.15 +
+      statisticalRigorScore * 0.25
     ));
-    
-    const expectedLift = this.predictExpectedLift(config, industryFactors);
-    const confidenceScore = this.calculateConfidenceScore(config, probabilityOfSuccess);
-    
+
+    // Expected lift prediction
+    const expectedLift = this.predictExpectedLift(
+      baselineRate,
+      minimumDetectableEffect,
+      industryScore,
+      probabilityOfSuccess
+    );
+
+    // Confidence score
+    const confidenceScore = this.calculateConfidenceScore(
+      probabilityOfSuccess,
+      sampleSizeScore,
+      statisticalRigorScore
+    );
+
+    // Generate insights
+    const insights = this.generateInsights(config, probabilityOfSuccess, expectedLift);
+
+    // Assess risk factors
+    const riskFactors = this.assessRiskFactors(config, probabilityOfSuccess);
+
+    // Generate recommendations
+    const recommendations = this.generateRecommendations(config, riskFactors);
+
     return {
       probabilityOfSuccess,
       expectedLift,
       confidenceScore,
-      recommendation: this.getRecommendation(probabilityOfSuccess, expectedLift),
-      insights: this.generateInsights(config, industryFactors, probabilityOfSuccess),
-      riskFactors: this.assessRiskFactors(config)
+      insights,
+      riskFactors,
+      recommendations
     };
   }
 
   /**
-   * Predict optimal stopping time for sequential testing
+   * Calculate effect size score (0-1)
    */
-  static predictOptimalStoppingTime(currentData: {
-    currentSampleSize: number;
-    currentPValue: number;
-    currentEffect: number;
-    targetSampleSize: number;
-    dailyTraffic: number;
-  }) {
-    const progress = currentData.currentSampleSize / currentData.targetSampleSize;
-    const effectStrength = Math.abs(currentData.currentEffect) / 5; // normalized
-    const significanceStrength = Math.max(0, 1 - currentData.currentPValue);
+  private static calculateEffectSizeScore(mde: number): number {
+    if (mde >= 20) return 0.95;
+    if (mde >= 15) return 0.85;
+    if (mde >= 10) return 0.75;
+    if (mde >= 5) return 0.60;
+    if (mde >= 2) return 0.40;
+    return 0.20;
+  }
+
+  /**
+   * Calculate sample size score (0-1)
+   */
+  private static calculateSampleSizeScore(dailyTraffic: number, testDuration: number): number {
+    const totalSample = dailyTraffic * testDuration;
+    if (totalSample >= 100000) return 0.95;
+    if (totalSample >= 50000) return 0.85;
+    if (totalSample >= 20000) return 0.75;
+    if (totalSample >= 10000) return 0.65;
+    if (totalSample >= 5000) return 0.50;
+    if (totalSample >= 1000) return 0.35;
+    return 0.15;
+  }
+
+  /**
+   * Get industry-specific score
+   */
+  private static getIndustryScore(industry: string): number {
+    const industryScores: Record<string, number> = {
+      'ecommerce': 0.80,
+      'saas': 0.75,
+      'media': 0.70,
+      'finance': 0.65,
+      'education': 0.60,
+      'other': 0.55
+    };
+    return industryScores[industry] || 0.55;
+  }
+
+  /**
+   * Get test type score
+   */
+  private static getTestTypeScore(testType: string): number {
+    const testTypeScores: Record<string, number> = {
+      'conversion': 0.85,
+      'revenue': 0.75,
+      'engagement': 0.65,
+      'retention': 0.55
+    };
+    return testTypeScores[testType] || 0.60;
+  }
+
+  /**
+   * Calculate statistical rigor score
+   */
+  private static calculateStatisticalRigor(alpha: number, power: number): number {
+    let score = 0;
     
-    const stopProbability = Math.min(0.95, 
-      progress * 0.4 + 
-      effectStrength * 0.3 + 
-      significanceStrength * 0.3
+    // Alpha contribution
+    if (alpha <= 0.01) score += 0.5;
+    else if (alpha <= 0.05) score += 0.4;
+    else score += 0.2;
+    
+    // Power contribution
+    if (power >= 0.9) score += 0.5;
+    else if (power >= 0.8) score += 0.4;
+    else score += 0.2;
+    
+    return score;
+  }
+
+  /**
+   * Predict expected lift
+   */
+  private static predictExpectedLift(
+    baselineRate: number,
+    mde: number,
+    industryScore: number,
+    probabilityOfSuccess: number
+  ): number {
+    const baseExpectation = mde * 0.7; // Conservative estimate
+    const industryAdjustment = baseExpectation * (industryScore - 0.5);
+    const confidenceAdjustment = baseExpectation * (probabilityOfSuccess - 0.5) * 0.5;
+    
+    return Math.max(0, baseExpectation + industryAdjustment + confidenceAdjustment);
+  }
+
+  /**
+   * Calculate confidence score
+   */
+  private static calculateConfidenceScore(
+    probabilityOfSuccess: number,
+    sampleSizeScore: number,
+    statisticalRigorScore: number
+  ): number {
+    return Math.min(0.99, 
+      probabilityOfSuccess * 0.4 +
+      sampleSizeScore * 0.3 +
+      statisticalRigorScore * 0.3
     );
-    
-    const estimatedDaysToSignificance = this.estimateDaysToSignificance(currentData);
-    
-    return {
-      stopProbability,
-      recommendedAction: this.getSequentialRecommendation(stopProbability, progress, currentData.currentPValue),
-      estimatedDaysToSignificance,
-      riskAssessment: this.calculateSequentialRisk(currentData)
-    };
   }
 
   /**
-   * Segment analysis with ML clustering simulation
+   * Generate ML insights
    */
-  static async performSegmentAnalysis(userData: {
-    baselineRate: number;
-    totalUsers: number;
-  }) {
-    // Simulate ML clustering
-    const segments = [
-      {
-        name: 'High-Value Users',
-        size: 0.15,
-        baselineConversion: userData.baselineRate * 1.8,
-        sensitivity: 'high' as const,
-        predictedLift: 12.5,
-        confidence: 0.87
-      },
-      {
-        name: 'Regular Users',
-        size: 0.65,
-        baselineConversion: userData.baselineRate,
-        sensitivity: 'medium' as const,
-        predictedLift: 8.2,
-        confidence: 0.92
-      },
-      {
-        name: 'New Users',
-        size: 0.20,
-        baselineConversion: userData.baselineRate * 0.6,
-        sensitivity: 'low' as const,
-        predictedLift: 15.7,
-        confidence: 0.78
-      }
-    ];
-
-    return {
-      segments,
-      recommendations: this.getSegmentationRecommendations(segments),
-      expectedImpact: this.calculateSegmentedImpact(segments, userData)
-    };
-  }
-
-  // Private helper methods
-  private static getIndustryFactors(industry: string) {
-    const factors = {
-      ecommerce: { successRate: 0.68, avgLift: 8.5, volatility: 0.3 },
-      saas: { successRate: 0.75, avgLift: 12.3, volatility: 0.2 },
-      media: { successRate: 0.62, avgLift: 6.8, volatility: 0.4 },
-      fintech: { successRate: 0.71, avgLift: 10.1, volatility: 0.25 }
-    };
-    return factors[industry as keyof typeof factors] || factors.ecommerce;
-  }
-
-  private static calculateEffectSizeScore(effectSize: number): number {
-    // Realistic effect sizes are easier to detect
-    if (effectSize >= 1 && effectSize <= 5) return 0.9;
-    if (effectSize > 5 && effectSize <= 10) return 0.8;
-    if (effectSize > 10) return 0.7;
-    if (effectSize < 1) return Math.max(0.2, effectSize / 1);
-    return 0.5;
-  }
-
-  private static calculateSampleSizeScore(config: TestConfiguration): number {
-    const requiredSample = this.estimateRequiredSample(config);
-    const actualSample = config.dailyTraffic * config.testDuration;
-    const ratio = actualSample / requiredSample;
-    
-    return Math.min(1, Math.max(0.1, ratio));
-  }
-
-  private static estimateRequiredSample(config: TestConfiguration): number {
-    // Simplified sample size estimation
-    const baselineRate = config.baselineRate / 100;
-    const effectSize = config.minimumDetectableEffect / 100;
-    return Math.ceil(16 * baselineRate * (1 - baselineRate) / (effectSize * effectSize));
-  }
-
-  private static predictExpectedLift(config: TestConfiguration, industryFactors: any): number {
-    const baseLift = config.minimumDetectableEffect;
-    const industryMultiplier = industryFactors.avgLift / 10;
-    const seasonalityFactor = 1 + (Math.random() - 0.5) * 0.2; // ±10% variation
-    
-    return baseLift * industryMultiplier * seasonalityFactor;
-  }
-
-  private static calculateConfidenceScore(config: TestConfiguration, probability: number): number {
-    const powerScore = config.power;
-    const alphaScore = 1 - config.alpha;
-    const probabilityScore = probability;
-    
-    return (powerScore * 0.4 + alphaScore * 0.3 + probabilityScore * 0.3);
-  }
-
-  private static getRecommendation(probability: number, expectedLift: number): 'implement' | 'continue' | 'reject' {
-    if (probability > 0.8 && expectedLift > 2) return 'implement';
-    if (probability > 0.5) return 'continue';
-    return 'reject';
-  }
-
-  private static generateInsights(config: TestConfiguration, industryFactors: any, probability: number): string[] {
+  private static generateInsights(
+    config: TestConfiguration,
+    probabilityOfSuccess: number,
+    expectedLift: number
+  ): string[] {
     const insights: string[] = [];
-    
-    insights.push(`${config.industry} industry shows ${(industryFactors.successRate * 100).toFixed(0)}% typical success rate`);
-    
-    if (config.minimumDetectableEffect < 2) {
-      insights.push('Small effect size may require larger sample sizes for reliable detection');
+
+    // Success probability insight
+    if (probabilityOfSuccess > 0.8) {
+      insights.push(`High confidence prediction: ${(probabilityOfSuccess * 100).toFixed(1)}% chance of detecting significant results`);
+    } else if (probabilityOfSuccess > 0.6) {
+      insights.push(`Moderate confidence: ${(probabilityOfSuccess * 100).toFixed(1)}% likelihood of achieving statistical significance`);
+    } else {
+      insights.push(`Low confidence scenario: ${(probabilityOfSuccess * 100).toFixed(1)}% probability suggests challenging test conditions`);
     }
-    
-    if (config.power < 0.8) {
-      insights.push('Consider increasing statistical power to 80% or higher');
+
+    // Sample size insight
+    const totalSample = config.dailyTraffic * config.testDuration;
+    if (totalSample < 10000) {
+      insights.push(`Sample size concern: ${totalSample.toLocaleString()} total visitors may be insufficient for reliable results`);
+    } else {
+      insights.push(`Adequate sample size: ${totalSample.toLocaleString()} visitors provides good statistical foundation`);
     }
-    
-    if (probability > 0.8) {
-      insights.push('High probability of success based on current parameters');
-    } else if (probability < 0.3) {
-      insights.push('Low success probability - consider adjusting test parameters');
+
+    // Effect size insight
+    if (config.minimumDetectableEffect < 5) {
+      insights.push(`Small effect detection: ${config.minimumDetectableEffect}% MDE requires larger samples and longer duration`);
+    } else if (config.minimumDetectableEffect > 15) {
+      insights.push(`Large effect target: ${config.minimumDetectableEffect}% MDE should be easily detectable if true difference exists`);
     }
-    
-    const estimatedDuration = Math.ceil((config.dailyTraffic * config.testDuration) / 1000);
-    if (estimatedDuration > 30) {
-      insights.push('Long test duration may be affected by external factors');
-    }
-    
+
+    // Expected lift insight
+    insights.push(`AI prediction: Expected lift of ${expectedLift.toFixed(1)}% based on industry patterns and test parameters`);
+
+    // Industry-specific insight
+    const industryInsights: Record<string, string> = {
+      'ecommerce': 'E-commerce tests typically show strong conversion lift potential, especially for checkout and product page optimizations',
+      'saas': 'SaaS conversion tests often yield moderate but consistent improvements in signup and activation rates',
+      'media': 'Media engagement tests can show variable results depending on content type and audience segment',
+      'finance': 'Financial services tests require careful consideration of regulatory compliance and user trust factors',
+      'education': 'Educational platform tests often focus on engagement metrics with conversion being secondary',
+      'other': 'General industry patterns suggest moderate optimization potential across various metrics'
+    };
+    insights.push(industryInsights[config.industry] || industryInsights['other']);
+
     return insights;
   }
 
-  private static assessRiskFactors(config: TestConfiguration): RiskFactor[] {
-    const factors: RiskFactor[] = [];
-    
-    // Seasonality risk
-    factors.push({
-      factor: 'Seasonality',
-      level: Math.random() > 0.5 ? 'medium' : 'low',
-      score: Math.random() * 40 + 30
-    });
-    
+  /**
+   * Assess risk factors
+   */
+  private static assessRiskFactors(config: TestConfiguration, probabilityOfSuccess: number): Array<{
+    factor: string;
+    level: 'low' | 'medium' | 'high';
+    description: string;
+  }> {
+    const risks: Array<{factor: string; level: 'low' | 'medium' | 'high'; description: string}> = [];
+
     // Sample size risk
-    const sampleRisk = config.dailyTraffic < 1000 ? 'high' : 
-                      config.dailyTraffic < 5000 ? 'medium' : 'low';
-    factors.push({
-      factor: 'Sample Size',
-      level: sampleRisk,
-      score: config.dailyTraffic < 1000 ? 30 : config.dailyTraffic < 5000 ? 60 : 85
-    });
-    
-    // External validity
-    factors.push({
-      factor: 'External Validity',
-      level: 'medium',
-      score: 65
-    });
-    
-    // Competition impact
-    factors.push({
-      factor: 'Competition Impact',
-      level: config.industry === 'ecommerce' ? 'high' : 'medium',
-      score: config.industry === 'ecommerce' ? 40 : 55
-    });
-    
-    return factors;
-  }
-
-  private static getSequentialRecommendation(stopProb: number, progress: number, pValue: number) {
-    if (pValue < 0.05 && stopProb > 0.8) {
-      return { action: 'stop', reason: 'Достигнута значимость с высокой уверенностью' };
-    } else if (progress > 0.9 && pValue > 0.1) {
-      return { action: 'stop', reason: 'Мало шансов достичь значимости' };
-    } else if (progress < 0.5) {
-      return { action: 'continue', reason: 'Недостаточно данных для решения' };
+    const totalSample = config.dailyTraffic * config.testDuration;
+    if (totalSample < 5000) {
+      risks.push({
+        factor: 'Sample Size',
+        level: 'high',
+        description: 'Insufficient sample size may lead to inconclusive results'
+      });
+    } else if (totalSample < 15000) {
+      risks.push({
+        factor: 'Sample Size',
+        level: 'medium',
+        description: 'Moderate sample size requires careful monitoring'
+      });
     } else {
-      return { action: 'monitor', reason: 'Продолжайте с осторожным мониторингом' };
+      risks.push({
+        factor: 'Sample Size',
+        level: 'low',
+        description: 'Adequate sample size for reliable detection'
+      });
     }
+
+    // Effect size risk
+    if (config.minimumDetectableEffect < 3) {
+      risks.push({
+        factor: 'Effect Size',
+        level: 'high',
+        description: 'Very small effects are difficult to detect reliably'
+      });
+    } else if (config.minimumDetectableEffect < 8) {
+      risks.push({
+        factor: 'Effect Size',
+        level: 'medium',
+        description: 'Small effects require larger samples and longer duration'
+      });
+    } else {
+      risks.push({
+        factor: 'Effect Size',
+        level: 'low',
+        description: 'Effect size is large enough for reliable detection'
+      });
+    }
+
+    // Statistical power risk
+    if (config.power < 0.7) {
+      risks.push({
+        factor: 'Statistical Power',
+        level: 'high',
+        description: 'Low power increases risk of missing true effects'
+      });
+    } else if (config.power < 0.8) {
+      risks.push({
+        factor: 'Statistical Power',
+        level: 'medium',
+        description: 'Moderate power may miss smaller true effects'
+      });
+    } else {
+      risks.push({
+        factor: 'Statistical Power',
+        level: 'low',
+        description: 'Adequate power for reliable effect detection'
+      });
+    }
+
+    // Success probability risk
+    if (probabilityOfSuccess < 0.5) {
+      risks.push({
+        factor: 'Overall Success',
+        level: 'high',
+        description: 'Low probability of achieving meaningful results'
+      });
+    } else if (probabilityOfSuccess < 0.7) {
+      risks.push({
+        factor: 'Overall Success',
+        level: 'medium',
+        description: 'Moderate success probability requires careful planning'
+      });
+    } else {
+      risks.push({
+        factor: 'Overall Success',
+        level: 'low',
+        description: 'High probability of successful test completion'
+      });
+    }
+
+    return risks;
   }
 
-  private static estimateDaysToSignificance(currentData: any): number {
-    const remainingSamples = Math.max(0, currentData.targetSampleSize - currentData.currentSampleSize);
-    return Math.ceil(remainingSamples / currentData.dailyTraffic);
-  }
+  /**
+   * Generate recommendations
+   */
+  private static generateRecommendations(
+    config: TestConfiguration,
+    riskFactors: Array<{factor: string; level: 'low' | 'medium' | 'high'; description: string}>
+  ): string[] {
+    const recommendations: string[] = [];
 
-  private static calculateSequentialRisk(currentData: any) {
-    return {
-      falsePositiveRisk: currentData.currentPValue < 0.05 ? 'Low' : 'High',
-      practicalSignificanceRisk: Math.abs(currentData.currentEffect) > 2 ? 'Low' : 'Medium',
-      overallRisk: currentData.currentPValue < 0.05 && Math.abs(currentData.currentEffect) > 2 ? 'Low' : 'High'
-    };
-  }
+    // Check for high risks and provide recommendations
+    const highRisks = riskFactors.filter(risk => risk.level === 'high');
+    const mediumRisks = riskFactors.filter(risk => risk.level === 'medium');
 
-  private static getSegmentationRecommendations(segments: any[]) {
-    return segments.map(segment => ({
-      segment: segment.name,
-      testStrategy: segment.sensitivity === 'high' ? 'Conservative approach' : 'Standard testing',
-      expectedROI: segment.predictedLift * segment.confidence,
-      priority: segment.sensitivity === 'high' ? 'High' : 'Medium'
-    }));
-  }
+    if (highRisks.some(risk => risk.factor === 'Sample Size')) {
+      recommendations.push('Increase daily traffic allocation or extend test duration to achieve minimum 10,000 samples per variant');
+    }
 
-  private static calculateSegmentedImpact(segments: any[], userData: any) {
-    let totalImpact = 0;
-    
-    segments.forEach(segment => {
-      const segmentImpact = segment.size * segment.baselineConversion * 
-                           (segment.predictedLift / 100);
-      totalImpact += segmentImpact;
-    });
-    
-    return {
-      totalLift: totalImpact,
-      confidence: segments.reduce((acc, s) => acc + s.confidence * s.size, 0),
-      timeToImplement: '2-4 weeks'
-    };
+    if (highRisks.some(risk => risk.factor === 'Effect Size')) {
+      recommendations.push('Consider increasing minimum detectable effect to 5% or higher for more reliable detection');
+    }
+
+    if (highRisks.some(risk => risk.factor === 'Statistical Power')) {
+      recommendations.push('Increase statistical power to at least 80% by adjusting sample size or effect size parameters');
+    }
+
+    if (config.testDuration < 7) {
+      recommendations.push('Extend test duration to at least 1 week to account for day-of-week variations');
+    }
+
+    if (config.alpha > 0.05) {
+      recommendations.push('Consider using a more stringent significance level (α ≤ 0.05) for business-critical decisions');
+    }
+
+    // Positive recommendations
+    if (riskFactors.every(risk => risk.level === 'low')) {
+      recommendations.push('Excellent test setup! All parameters are optimized for reliable results');
+      recommendations.push('Consider running parallel tests on different segments to maximize learning');
+    }
+
+    // Industry-specific recommendations
+    if (config.industry === 'ecommerce') {
+      recommendations.push('Monitor for seasonal effects and consider segmenting by device type for deeper insights');
+    } else if (config.industry === 'saas') {
+      recommendations.push('Track cohorted conversion rates and consider user onboarding stage as a key segment');
+    } else if (config.industry === 'media') {
+      recommendations.push('Monitor engagement patterns by content type and consider time-of-day effects');
+    }
+
+    // Default recommendations if no specific ones added
+    if (recommendations.length === 0) {
+      recommendations.push('Test configuration appears balanced - proceed with current setup');
+      recommendations.push('Implement proper randomization and consider pre-test data collection');
+    }
+
+    return recommendations;
   }
 }
