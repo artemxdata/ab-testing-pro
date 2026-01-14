@@ -1,53 +1,57 @@
 import React from "react";
-import type { Decision, Signals } from "../types/decision";
 
-function badgeText(decision: Decision): string {
-  switch (decision) {
-    case "AUTO_APPROVE": return "AUTO APPROVE ✅";
-    case "CONTINUE_TEST": return "CONTINUE TEST ⏳";
-    case "HUMAN_REVIEW": return "HUMAN REVIEW 👤";
-    case "ESCALATE": return "ESCALATE 🚨";
-    default: return decision;
-  }
-}
-
-export function DecisionCard(props: {
-  decision: Decision;
+type Props = {
+  decision: string;
   confidence: number;
-  signals: Signals;
-}) {
-  const { decision, confidence, signals } = props;
+};
 
-  const drivers = [
-    { k: "p_value_level", label: "Significance (p-value)", v: signals.p_value_level },
-    { k: "effect_size_level", label: "Effect size", v: signals.effect_size_level },
-    { k: "roi_level", label: "ROI", v: signals.roi_level },
-    { k: "expected_loss_level", label: "Expected loss", v: signals.expected_loss_level },
-    { k: "srm_level", label: "SRM", v: signals.srm_level },
-  ];
+const pillByDecision = (decision: string) => {
+  const d = String(decision || "").toUpperCase();
+
+  if (["IMPLEMENT", "LAUNCH", "ACCEPT", "ROLLOUT", "SHIP"].some((k) => d.includes(k))) {
+    return { emoji: "🚀", label: "IMPLEMENT", className: "bg-green-100 text-green-800 border-green-200" };
+  }
+  if (["REJECT", "STOP"].some((k) => d.includes(k))) {
+    return { emoji: "⛔", label: "REJECT", className: "bg-red-100 text-red-800 border-red-200" };
+  }
+  if (d.includes("ESCALATE")) {
+    return { emoji: "⚠️", label: "ESCALATE", className: "bg-yellow-100 text-yellow-800 border-yellow-200" };
+  }
+  return { emoji: "⏳", label: "CONTINUE", className: "bg-gray-100 text-gray-800 border-gray-200" };
+};
+
+function DecisionCard({ decision, confidence }: Props) {
+  const pill = pillByDecision(decision);
 
   return (
-    <div style={{
-      border: "1px solid #e5e7eb",
-      borderRadius: 12,
-      padding: 16,
-      marginTop: 16
-    }}>
-      <div style={{ fontSize: 18, fontWeight: 700 }}>{badgeText(decision)}</div>
-      <div style={{ marginTop: 6, opacity: 0.8 }}>
-        Confidence: {(confidence * 100).toFixed(0)}%
+    <div className="p-4 rounded-xl border border-gray-200 bg-white">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="text-2xl">{pill.emoji}</div>
+          <div>
+            <div className="font-semibold">Decision</div>
+            <div className="text-sm text-gray-600">
+              Decision is produced by YAML policies (deterministic engine)
+            </div>
+          </div>
+        </div>
+
+        <span className={`px-3 py-1 rounded-full border text-xs font-bold ${pill.className}`}>
+          {pill.label}
+        </span>
       </div>
 
-      <div style={{ marginTop: 12, fontWeight: 600 }}>Key Drivers</div>
-      <ul style={{ marginTop: 8, paddingLeft: 18 }}>
-        {drivers.map((d) => (
-          <li key={d.k} style={{ marginBottom: 6 }}>
-            {d.label}: <b>{d.v}</b>
-          </li>
-        ))}
-      </ul>
+      <div className="mt-3 text-sm">
+        <div>
+          <span className="font-semibold">Decision:</span> {decision}
+        </div>
+        <div>
+          <span className="font-semibold">Confidence:</span> {(Number(confidence || 0) * 100).toFixed(0)}%
+        </div>
+      </div>
     </div>
   );
 }
 
 export default DecisionCard;
+export { DecisionCard };
