@@ -1,146 +1,119 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { loadPolicies } from "../policy/policyLoader";
+import DecisionCard from "./DecisionCard";
+import DecisionTrace from "./DecisionTrace";
+
+// ВАЖНО: эти импорты должны уже существовать у тебя в проекте
+import { loadPoliciesFromPublic } from "../policy/policyLoader";
 import { evaluatePolicies } from "../policy/policyEngine";
 import { buildSignals } from "../core/signals";
+
+export type PolicyResult = {
+  decision: string;
+  confidence: number;
+  triggeredRules: Array<{
+    id: string;
+    title?: string;
+    severity?: string;
+    decision?: string;
+    reason?: string;
+  }>;
+  signals: Record<string, any>;
+  policyVersion?: string;
+};
 
 type Props = {
   pValue: number;
   upliftPct: number;
-  // можно расширять позже: roiPct, expectedLoss, srmPValue, power...
+  onResult?: (result: PolicyResult) => void; // <-- КЛЮЧЕВО: отдаём наверх
 };
 
-export function PolicyDemoPanel({ pValue, upliftPct }: Props) {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [decision, setDecision] = useState<any>(null);
+const PolicyDemoPanel: React.FC<Props> = ({ pValue, upliftPct, onResult }) => {
+  const [loading, setLoading] = useState(false);
+  const [policyError, setPolicyError] = useState<string | null>(null);
+  const [result, setResult] = useState<PolicyResult | null>(null);
 
+  // Сигналы считаем детерминированно из чисел
   const signals = useMemo(() => {
-    // buildSignals — твой слой сигналов. Если у тебя другой интерфейс — подстроим,
-    // но смысл: один объект сигналов для policy engine.
+    // buildSignals — твоя функция ядра. Держим входы минимальными.
     return buildSignals({
       p_value: pValue,
       uplift_pct: upliftPct,
-      // заглушки / можно вычислить позже:
-      power: 0.6,
-      roi_pct: upliftPct, // временно
-      expected_loss: 0.0,
-      srm_p_value: 1.0,
     });
   }, [pValue, upliftPct]);
 
   useEffect(() => {
     let alive = true;
 
-    async function run() {
+    const run = async () => {
       setLoading(true);
-      setError(null);
+      setPolicyError(null);
 
       try {
-        const doc = await loadPolicies();
-        const res = evaluatePolicies(doc, signals);
+        const policies = await loadPoliciesFromPublic();
+
+        // evaluatePolicies — возвращает decision + confidence + triggeredRules
+        const evaluated = evaluatePolicies(policies, signals);
+
+        const res: PolicyResult = {
+          decision: evaluated.decision,
+          confidence: evaluated.confidence ?? policies?.defaultConfidence ?? 0.55,
+          triggeredRules: evaluated.triggeredRules ?? [],
+          signals,
+          policyVersion: policies?.version,
+        };
+
         if (!alive) return;
-        setDecision(res);
+
+        setResult(res);
+        onResult?.(res);
       } catch (e: any) {
         if (!alive) return;
-        setError(e?.message || String(e));
+        const msg = e?.message ? String(e.message) : "Unknown policy error";
+        setPolicyError(msg);
+        setResult(null);
+        onResult?.({
+          decision: "CONTINUE_TEST",
+          confidence: 0.55,
+          triggeredRules: [],
+          signals,
+        });
       } finally {
-        if (!alive) return;
-        setLoading(false);
+        if (alive) setLoading(false);
       }
-    }
+    };
 
     run();
     return () => {
       alive = false;
     };
-  }, [signals]);
+  }, [signals, onResult]);
 
-  if (loading) {
+  if (policyError) {
     return (
-      <div className="mt-8 p-4 rounded-xl border border-gray-200">
-        Loading policy engine…
+      <div className="mt-6 p-4 rounded-xl border border-red-300 bg-red-50 text-red-800">
+        <b>Policy Engine Error:</b> {policyError}
       </div>
     );
   }
 
-  if (error) {
+  if (loading || !result) {
     return (
-      <div className="mt-8 p-4 rounded-xl border border-red-300 bg-red-50 text-red-800">
-        <b>Policy Engine Error:</b> {error}
+      <div className="mt-6 p-4 rounded-xl border border-gray-200 bg-white text-gray-700">
+        <b>Policy Engine:</b> {loading ? "Loading policies…" : "Waiting for decision…"}
       </div>
     );
   }
-
-  if (!decision) return null;
 
   return (
-    <div className="mt-8 space-y-4">
-      <div className="p-4 rounded-xl border border-gray-200">
-        <div className="flex items-center justify-between">
-          <div className="font-bold">Policy Decision</div>
-          <div className="text-sm opacity-70">
-            Confidence: {(decision.confidence * 100).toFixed(0)}%
-          </div>
-        </div>
-
-        <div className="mt-2 text-2xl font-black">
-          {decision.decision}
-        </div>
-
-        <div className="mt-3">
-          <div className="font-semibold mb-2">Key Drivers</div>
-          <ul className="list-disc pl-5 space-y-1 text-sm">
-            <li>Significance (p-value): <b>{signals.p_value_level}</b></li>
-            <li>Effect size: <b>{signals.effect_size_level}</b></li>
-            <li>Power: <b>{signals.power_level}</b></li>
-            <li>ROI: <b>{signals.roi_level}</b></li>
-            <li>Expected loss: <b>{signals.expected_loss_level}</b></li>
-            <li>SRM: <b>{signals.srm_level}</b></li>
-          </ul>
-        </div>
+    <div className="mt-6 space-y-4">
+      <DecisionCard decision={result.decision} confidence={result.confidence} />
+      <DecisionTrace triggeredRules={result.triggeredRules} />
+      <div className="p-4 rounded-xl border border-gray-200 bg-white">
+        <div className="font-semibold mb-2">Signals (debug)</div>
+        <pre className="text-xs overflow-auto">{JSON.stringify(result.signals, null, 2)}</pre>
       </div>
-
-      <div className="p-4 rounded-xl border border-gray-200">
-        <div className="font-bold">Decision Trace</div>
-        <div className="text-sm opacity-70">{decision.triggeredRules.length} rule(s) matched.</div>
-
-        <div className="mt-3 overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="text-left border-b">
-                <th className="py-2 pr-4">Rule</th>
-                <th className="py-2 pr-4">Severity</th>
-                <th className="py-2 pr-4">Decision</th>
-                <th className="py-2 pr-4">Reason</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(decision.triggeredRules.length ? decision.triggeredRules : [{
-                id: "DEFAULT_CONTINUE",
-                title: "Default safe behavior",
-                severity: "INFO",
-                decision: decision.decision,
-                reason: "No policy rule matched",
-              }]).map((r: any) => (
-                <tr key={r.id} className="border-b">
-                  <td className="py-2 pr-4">
-                    <div className="font-semibold">{r.title || r.id}</div>
-                    <div className="opacity-60">{r.id}</div>
-                  </td>
-                  <td className="py-2 pr-4">{r.severity || "INFO"}</td>
-                  <td className="py-2 pr-4">{r.decision}</td>
-                  <td className="py-2 pr-4">{r.reason || "-"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <details className="p-4 rounded-xl border border-gray-200">
-        <summary className="cursor-pointer font-bold">Signals (debug)</summary>
-        <pre className="mt-3 text-xs overflow-x-auto">{JSON.stringify(signals, null, 2)}</pre>
-      </details>
     </div>
   );
-}
+};
+
+export default PolicyDemoPanel;

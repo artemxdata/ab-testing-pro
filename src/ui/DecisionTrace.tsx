@@ -54,3 +54,5 @@ export function DecisionTrace(props: { rules: TriggeredRule[] }) {
     </div>
   );
 }
+
+export default DecisionTrace;

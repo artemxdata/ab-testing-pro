@@ -49,3 +49,5 @@ export function DecisionCard(props: {
     </div>
   );
 }
+
+export default DecisionCard;
