@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { PolicyDemoPanel } from "../ui/PolicyDemoPanel";
 
 const ABTestingPro = () => {
   const [controlVisitors, setControlVisitors] = useState(1000);
   const [controlConversions, setControlConversions] = useState(50);
   const [treatmentVisitors, setTreatmentVisitors] = useState(1000);
   const [treatmentConversions, setTreatmentConversions] = useState(58);
+
   const [isAnimating, setIsAnimating] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [activeTab, setActiveTab] = useState('calculator');
@@ -13,57 +15,138 @@ const ABTestingPro = () => {
     return visitors > 0 ? (conversions / visitors) * 100 : 0;
   };
 
-  const controlRate = calculateConversionRate(controlConversions, controlVisitors);
-  const treatmentRate = calculateConversionRate(treatmentConversions, treatmentVisitors);
-  const improvement = controlRate > 0 ? ((treatmentRate - controlRate) / controlRate) * 100 : 0;
+  const controlRate = useMemo(
+    () => calculateConversionRate(controlConversions, controlVisitors),
+    [controlConversions, controlVisitors]
+  );
+  const treatmentRate = useMemo(
+    () => calculateConversionRate(treatmentConversions, treatmentVisitors),
+    [treatmentConversions, treatmentVisitors]
+  );
+
+  const improvement = useMemo(() => {
+    return controlRate > 0 ? ((treatmentRate - controlRate) / controlRate) * 100 : 0;
+  }, [controlRate, treatmentRate]);
 
   const calculateZScore = () => {
-    if (controlVisitors === 0 || treatmentVisitors === 0) return 0;
-    
+    if (controlVisitors <= 0 || treatmentVisitors <= 0) return 0;
+    if (controlConversions < 0 || treatmentConversions < 0) return 0;
+    if (controlConversions > controlVisitors || treatmentConversions > treatmentVisitors) return 0;
+
     const p1 = controlConversions / controlVisitors;
     const p2 = treatmentConversions / treatmentVisitors;
     const pooledRate = (controlConversions + treatmentConversions) / (controlVisitors + treatmentVisitors);
-    const standardError = Math.sqrt(pooledRate * (1 - pooledRate) * (1/controlVisitors + 1/treatmentVisitors));
-    
+
+    const standardError = Math.sqrt(
+      pooledRate * (1 - pooledRate) * (1 / controlVisitors + 1 / treatmentVisitors)
+    );
+
     return standardError > 0 ? (p2 - p1) / standardError : 0;
   };
 
-  const zScore = calculateZScore();
-  const isSignificant = Math.abs(zScore) > 1.96;
-  const pValue = zScore !== 0 ? 2 * (1 - Math.abs(zScore) / Math.sqrt(2 * Math.PI)) : 1;
+  const zScore = useMemo(() => calculateZScore(), [
+    controlVisitors,
+    controlConversions,
+    treatmentVisitors,
+    treatmentConversions
+  ]);
 
+  // --- Correct normal CDF & p-value (two-tailed) ---
+
+  // Error function (Abramowitz–Stegun approximation)
+  const erf = (x) => {
+    const sign = x >= 0 ? 1 : -1;
+    x = Math.abs(x);
+
+    const a1 = 0.254829592;
+    const a2 = -0.284496736;
+    const a3 = 1.421413741;
+    const a4 = -1.453152027;
+    const a5 = 1.061405429;
+    const p = 0.3275911;
+
+    const t = 1.0 / (1.0 + p * x);
+    const y =
+      1.0 -
+      (((((a5 * t + a4) * t + a3) * t + a2) * t + a1) *
+        t *
+        Math.exp(-x * x));
+
+    return sign * y;
+  };
+
+  // Normal CDF
+  const normalCdf = (z) => 0.5 * (1 + erf(z / Math.SQRT2));
+
+  // Two-tailed p-value for z-test
+  const pValueRaw = zScore === 0 ? 1 : 2 * (1 - normalCdf(Math.abs(zScore)));
+  const pValue = Math.max(0, Math.min(1, pValueRaw));
+
+  // significance flag (95% confidence)
+  const isSignificant = pValue < 0.05;
+
+  // Simple SRM flag: traffic split too imbalanced (>2% absolute share difference)
+  const srmFlag = useMemo(() => {
+    const total = controlVisitors + treatmentVisitors;
+    if (total <= 0) return false;
+    const shareA = controlVisitors / total;
+    const shareB = treatmentVisitors / total;
+    return Math.abs(shareA - shareB) > 0.02;
+  }, [controlVisitors, treatmentVisitors]);
+
+  // Optional business metrics placeholders (can improve later)
+  const roiPct = useMemo(() => {
+    // simple proxy: if improvement positive -> ROI positive; otherwise negative
+    return improvement;
+  }, [improvement]);
+
+  const power = useMemo(() => {
+    // conservative placeholder; later we can compute power properly
+    // for now: scale up with sample size
+    const n = Math.min(controlVisitors, treatmentVisitors);
+    if (n >= 50000) return 0.9;
+    if (n >= 10000) return 0.8;
+    if (n >= 3000) return 0.7;
+    return 0.6;
+  }, [controlVisitors, treatmentVisitors]);
+
+  // Sample data loader
   const loadSampleData = () => {
     setIsAnimating(true);
     setTimeout(() => {
-      setControlVisitors(2847);
-      setControlConversions(156);
-      setTreatmentVisitors(2903);
-      setTreatmentConversions(189);
+      setControlVisitors(1000);
+      setControlConversions(50);
+      setTreatmentVisitors(1000);
+      setTreatmentConversions(58);
       setIsAnimating(false);
-    }, 500);
+    }, 350);
   };
 
   const generateRandomData = () => {
     setIsAnimating(true);
     setTimeout(() => {
       const baseVisitors = Math.floor(Math.random() * 5000) + 1000;
-      const baseRate = Math.random() * 0.15 + 0.02; // 2-17%
-      const lift = (Math.random() - 0.5) * 0.6; // -30% to +30%
-      
-      setControlVisitors(baseVisitors);
-      setControlConversions(Math.floor(baseVisitors * baseRate));
-      setTreatmentVisitors(baseVisitors + Math.floor(Math.random() * 200 - 100));
-      setTreatmentConversions(Math.floor((baseVisitors + Math.floor(Math.random() * 200 - 100)) * baseRate * (1 + lift)));
+      const baseRate = Math.random() * 0.15 + 0.02; // 2–17%
+      const lift = (Math.random() - 0.5) * 0.6; // -30%..+30%
+
+      const visitorsA = baseVisitors;
+      const visitorsB = baseVisitors + Math.floor(Math.random() * 200 - 100);
+
+      const convA = Math.floor(visitorsA * baseRate);
+      const convB = Math.floor(visitorsB * baseRate * (1 + lift));
+
+      setControlVisitors(visitorsA);
+      setControlConversions(convA);
+      setTreatmentVisitors(visitorsB);
+      setTreatmentConversions(convB);
+
       setIsAnimating(false);
     }, 500);
   };
 
   useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    if (darkMode) document.documentElement.classList.add('dark');
+    else document.documentElement.classList.remove('dark');
   }, [darkMode]);
 
   const getConfidenceColor = () => {
@@ -95,7 +178,7 @@ const ABTestingPro = () => {
               <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl flex items-center justify-center transform rotate-3 hover:rotate-6 transition-transform">
                 <span className="text-2xl">🎯</span>
               </div>
-              <div>
+              <div className="text-left">
                 <h1 className={`text-4xl font-black ${darkMode ? 'text-white' : 'text-gray-900'} tracking-tight`}>
                   A/B Testing Pro
                 </h1>
@@ -104,15 +187,17 @@ const ABTestingPro = () => {
                 </p>
               </div>
             </div>
-            
+
             {/* Dark Mode Toggle */}
             <button
               onClick={() => setDarkMode(!darkMode)}
               className={`p-3 rounded-xl transition-all duration-300 ${
-                darkMode 
-                  ? 'bg-yellow-500 text-gray-900 hover:bg-yellow-400' 
+                darkMode
+                  ? 'bg-yellow-500 text-gray-900 hover:bg-yellow-400'
                   : 'bg-gray-800 text-yellow-400 hover:bg-gray-700'
               }`}
+              aria-label="Toggle theme"
+              title="Toggle theme"
             >
               {darkMode ? '☀️' : '🌙'}
             </button>
@@ -121,22 +206,22 @@ const ABTestingPro = () => {
           {/* Navigation Tabs */}
           <div className={`flex justify-center space-x-1 p-1 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg max-w-md mx-auto`}>
             {[
-              { id: 'calculator', label: '📊 Calculator', icon: '📊' },
-              { id: 'insights', label: '🧠 Insights', icon: '🧠' },
-              { id: 'history', label: '📈 History', icon: '📈' }
+              { id: 'calculator', icon: '📊' },
+              { id: 'insights', icon: '🧠' },
+              { id: 'history', icon: '📈' }
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all duration-200 ${
                   activeTab === tab.id
-                    ? darkMode
-                      ? 'bg-blue-600 text-white shadow-lg'
-                      : 'bg-blue-600 text-white shadow-lg'
+                    ? 'bg-blue-600 text-white shadow-lg'
                     : darkMode
                       ? 'text-gray-300 hover:text-white hover:bg-gray-700'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
+                aria-label={tab.id}
+                title={tab.id}
               >
                 {tab.icon}
               </button>
@@ -154,14 +239,14 @@ const ABTestingPro = () => {
                   <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
                     <span className="text-2xl font-bold text-white">A</span>
                   </div>
-                  <div>
+                  <div className="text-left">
                     <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                       Control Group
                     </h2>
                     <p className={`${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Baseline variant</p>
                   </div>
                 </div>
-                
+
                 <div className="space-y-6">
                   <div className="group">
                     <label className={`block text-sm font-semibold mb-3 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -170,16 +255,17 @@ const ABTestingPro = () => {
                     <input
                       type="number"
                       className={`w-full px-4 py-4 rounded-xl border-2 font-semibold text-lg transition-all duration-200 ${
-                        darkMode 
-                          ? 'bg-gray-700 border-gray-600 text-white focus:border-blue-500' 
+                        darkMode
+                          ? 'bg-gray-700 border-gray-600 text-white focus:border-blue-500'
                           : 'bg-gray-50 border-gray-200 text-gray-900 focus:border-blue-500'
                       } focus:ring-4 focus:ring-blue-500/20 group-hover:border-blue-400`}
                       value={controlVisitors}
                       onChange={(e) => setControlVisitors(Number(e.target.value))}
                       placeholder="Enter visitors..."
+                      min={0}
                     />
                   </div>
-                  
+
                   <div className="group">
                     <label className={`block text-sm font-semibold mb-3 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                       ✅ Conversions
@@ -187,16 +273,17 @@ const ABTestingPro = () => {
                     <input
                       type="number"
                       className={`w-full px-4 py-4 rounded-xl border-2 font-semibold text-lg transition-all duration-200 ${
-                        darkMode 
-                          ? 'bg-gray-700 border-gray-600 text-white focus:border-blue-500' 
+                        darkMode
+                          ? 'bg-gray-700 border-gray-600 text-white focus:border-blue-500'
                           : 'bg-gray-50 border-gray-200 text-gray-900 focus:border-blue-500'
                       } focus:ring-4 focus:ring-blue-500/20 group-hover:border-blue-400`}
                       value={controlConversions}
                       onChange={(e) => setControlConversions(Number(e.target.value))}
                       placeholder="Enter conversions..."
+                      min={0}
                     />
                   </div>
-                  
+
                   {/* Conversion Rate Display */}
                   <div className={`p-6 rounded-xl ${darkMode ? 'bg-blue-900/30' : 'bg-blue-50'} border-2 border-blue-200`}>
                     <p className={`text-sm font-medium mb-2 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>
@@ -215,14 +302,14 @@ const ABTestingPro = () => {
                   <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
                     <span className="text-2xl font-bold text-white">B</span>
                   </div>
-                  <div>
+                  <div className="text-left">
                     <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                       Treatment Group
                     </h2>
                     <p className={`${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Test variant</p>
                   </div>
                 </div>
-                
+
                 <div className="space-y-6">
                   <div className="group">
                     <label className={`block text-sm font-semibold mb-3 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -231,16 +318,17 @@ const ABTestingPro = () => {
                     <input
                       type="number"
                       className={`w-full px-4 py-4 rounded-xl border-2 font-semibold text-lg transition-all duration-200 ${
-                        darkMode 
-                          ? 'bg-gray-700 border-gray-600 text-white focus:border-green-500' 
+                        darkMode
+                          ? 'bg-gray-700 border-gray-600 text-white focus:border-green-500'
                           : 'bg-gray-50 border-gray-200 text-gray-900 focus:border-green-500'
                       } focus:ring-4 focus:ring-green-500/20 group-hover:border-green-400`}
                       value={treatmentVisitors}
                       onChange={(e) => setTreatmentVisitors(Number(e.target.value))}
                       placeholder="Enter visitors..."
+                      min={0}
                     />
                   </div>
-                  
+
                   <div className="group">
                     <label className={`block text-sm font-semibold mb-3 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                       ✅ Conversions
@@ -248,16 +336,17 @@ const ABTestingPro = () => {
                     <input
                       type="number"
                       className={`w-full px-4 py-4 rounded-xl border-2 font-semibold text-lg transition-all duration-200 ${
-                        darkMode 
-                          ? 'bg-gray-700 border-gray-600 text-white focus:border-green-500' 
+                        darkMode
+                          ? 'bg-gray-700 border-gray-600 text-white focus:border-green-500'
                           : 'bg-gray-50 border-gray-200 text-gray-900 focus:border-green-500'
                       } focus:ring-4 focus:ring-green-500/20 group-hover:border-green-400`}
                       value={treatmentConversions}
                       onChange={(e) => setTreatmentConversions(Number(e.target.value))}
                       placeholder="Enter conversions..."
+                      min={0}
                     />
                   </div>
-                  
+
                   {/* Conversion Rate Display */}
                   <div className={`p-6 rounded-xl ${darkMode ? 'bg-green-900/30' : 'bg-green-50'} border-2 border-green-200`}>
                     <p className={`text-sm font-medium mb-2 ${darkMode ? 'text-green-300' : 'text-green-700'}`}>
@@ -277,7 +366,7 @@ const ABTestingPro = () => {
                 <div className={`w-12 h-12 bg-gradient-to-r ${getConfidenceColor()} rounded-xl flex items-center justify-center`}>
                   <span className="text-2xl">{getSignificanceEmoji()}</span>
                 </div>
-                <div>
+                <div className="text-left">
                   <h2 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                     Statistical Results
                   </h2>
@@ -286,7 +375,7 @@ const ABTestingPro = () => {
                   </p>
                 </div>
               </div>
-              
+
               {/* Key Metrics */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div className={`p-6 rounded-xl ${darkMode ? 'bg-gradient-to-r from-purple-900/50 to-purple-800/50' : 'bg-gradient-to-r from-purple-50 to-purple-100'} border ${darkMode ? 'border-purple-700' : 'border-purple-200'}`}>
@@ -297,7 +386,7 @@ const ABTestingPro = () => {
                     {improvement >= 0 ? '+' : ''}{improvement.toFixed(1)}%
                   </p>
                 </div>
-                
+
                 <div className={`p-6 rounded-xl ${darkMode ? 'bg-gradient-to-r from-blue-900/50 to-blue-800/50' : 'bg-gradient-to-r from-blue-50 to-blue-100'} border ${darkMode ? 'border-blue-700' : 'border-blue-200'}`}>
                   <p className={`text-sm font-medium mb-2 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>
                     📊 Z-Score
@@ -306,7 +395,7 @@ const ABTestingPro = () => {
                     {zScore.toFixed(2)}
                   </p>
                 </div>
-                
+
                 <div className={`p-6 rounded-xl ${darkMode ? 'bg-gradient-to-r from-indigo-900/50 to-indigo-800/50' : 'bg-gradient-to-r from-indigo-50 to-indigo-100'} border ${darkMode ? 'border-indigo-700' : 'border-indigo-200'}`}>
                   <p className={`text-sm font-medium mb-2 ${darkMode ? 'text-indigo-300' : 'text-indigo-700'}`}>
                     🎯 P-Value
@@ -315,7 +404,7 @@ const ABTestingPro = () => {
                     {pValue.toFixed(4)}
                   </p>
                 </div>
-                
+
                 <div className={`p-6 rounded-xl ${darkMode ? 'bg-gradient-to-r from-pink-900/50 to-pink-800/50' : 'bg-gradient-to-r from-pink-50 to-pink-100'} border ${darkMode ? 'border-pink-700' : 'border-pink-200'}`}>
                   <p className={`text-sm font-medium mb-2 ${darkMode ? 'text-pink-300' : 'text-pink-700'}`}>
                     🏆 Winner
@@ -337,18 +426,23 @@ const ABTestingPro = () => {
                       {isSignificant && improvement > 0
                         ? '🚀 Implement Treatment B!'
                         : isSignificant && improvement < 0
-                        ? '⚠️ Reject Treatment B'
-                        : '⏳ Continue Testing'
+                          ? '⚠️ Reject Treatment B'
+                          : '⏳ Continue Testing'
                       }
                     </h3>
                     <p className="text-lg opacity-90">
                       {isSignificant && improvement > 0
                         ? `Statistical significance achieved! Treatment B shows ${improvement.toFixed(1)}% improvement.`
                         : isSignificant && improvement < 0
-                        ? `Statistical significance shows Treatment B performs ${Math.abs(improvement).toFixed(1)}% worse.`
-                        : 'More data needed to reach 95% statistical confidence. Keep the test running!'
+                          ? `Statistical significance shows Treatment B performs ${Math.abs(improvement).toFixed(1)}% worse.`
+                          : 'More data needed to reach 95% statistical confidence. Keep the test running!'
                       }
                     </p>
+                    {srmFlag && (
+                      <p className="text-sm mt-3 opacity-90">
+                        ⚠️ SRM flag: traffic split looks imbalanced (assignment/instrumentation should be checked).
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -362,7 +456,7 @@ const ABTestingPro = () => {
                 >
                   {isAnimating ? '🔄 Loading...' : '📊 Load Sample Data'}
                 </button>
-                
+
                 <button
                   onClick={generateRandomData}
                   disabled={isAnimating}
@@ -371,6 +465,16 @@ const ABTestingPro = () => {
                   {isAnimating ? '🎲 Generating...' : '🎲 Generate Random Test'}
                 </button>
               </div>
+
+              {/* Policy / SOP decision panel */}
+              <PolicyDemoPanel
+                pValue={pValue}
+                upliftPct={improvement}
+                roiPct={roiPct}
+                power={power}
+                expectedLoss={undefined}
+                srmFlag={srmFlag}
+              />
             </div>
           </div>
         )}
@@ -386,7 +490,7 @@ const ABTestingPro = () => {
                   📈 Performance Analysis
                 </h3>
                 <p className={`${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Your test shows {Math.abs(improvement).toFixed(1)}% difference between variants. 
+                  Your test shows {Math.abs(improvement).toFixed(1)}% difference between variants.
                   {isSignificant ? ' This result is statistically significant!' : ' More data needed for significance.'}
                 </p>
               </div>
@@ -395,7 +499,7 @@ const ABTestingPro = () => {
                   🎯 Recommendations
                 </h3>
                 <p className={`${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  {isSignificant && improvement > 0 
+                  {isSignificant && improvement > 0
                     ? 'Strong evidence for implementing variant B across your platform.'
                     : 'Consider running the test longer or increasing sample size for decisive results.'
                   }

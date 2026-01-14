@@ -127,3 +127,9 @@ report.html
 
 # Local development
 .local
+
+
+# allow policy configs
+!public/
+!public/policies.yaml
+!public/policies/policies.yaml
