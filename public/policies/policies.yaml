@@ -1,0 +1,138 @@
+version: "1.0"
+defaultDecision: "CONTINUE_TEST"
+defaultConfidence: 0.55
+
+rules:
+  - id: "GOV_SRM_RED"
+    title: "Sample Ratio Mismatch detected"
+    severity: "CRITICAL"
+    when: "srm_level == RED"
+    match:
+      srm_level: "RED"
+    then:
+      decision: "ESCALATE"
+      confidence: 0.95
+    reason: "Traffic split is likely broken (SRM). Results are not trustworthy until instrumentation/assignment is fixed."
+    evidence:
+      - "SRM signal is RED"
+
+  - id: "RISK_EXPECTED_LOSS_RED"
+    title: "Expected loss is high"
+    severity: "CRITICAL"
+    when: "expected_loss_level == RED"
+    match:
+      expected_loss_level: "RED"
+    then:
+      decision: "HUMAN_REVIEW"
+      confidence: 0.85
+    reason: "Risk is high; decision requires human sign-off even if metrics look positive."
+    evidence:
+      - "Expected loss is RED"
+
+  - id: "BIZ_ROI_RED"
+    title: "ROI is negative or unacceptable"
+    severity: "CRITICAL"
+    when: "roi_level == RED"
+    match:
+      roi_level: "RED"
+    then:
+      decision: "ESCALATE"
+      confidence: 0.9
+    reason: "Business impact is negative; do not ship without rethinking the change."
+    evidence:
+      - "ROI signal is RED"
+
+  - id: "AUTO_APPROVE_STRONG_WIN"
+    title: "Statistically significant win with acceptable business risk"
+    severity: "INFO"
+    when: "p_value_level == GREEN AND effect_size_level == GREEN AND roi_level == GREEN AND expected_loss_level != RED AND srm_level != RED"
+    match:
+      p_value_level: "GREEN"
+      effect_size_level: "GREEN"
+      roi_level: "GREEN"
+    then:
+      decision: "AUTO_APPROVE"
+      confidence: 0.9
+    reason: "Strong win across significance, effect size and ROI, with no critical governance issues."
+    evidence:
+      - "p-value GREEN"
+      - "effect size GREEN"
+      - "ROI GREEN"
+
+  - id: "HUMAN_REVIEW_GUARDRAILS"
+    title: "Mixed signals: significance but business/risk amber"
+    severity: "WARN"
+    when: "p_value_level == GREEN AND (roi_level == AMBER OR expected_loss_level == AMBER)"
+    match:
+      p_value_level: "GREEN"
+    then:
+      decision: "HUMAN_REVIEW"
+      confidence: 0.75
+    reason: "Statistically significant, but business risk/ROI is ambiguous. Requires review."
+    evidence:
+      - "p-value GREEN"
+      - "ROI/Expected loss AMBER"
+
+  - id: "CONTINUE_LOW_POWER"
+    title: "Insufficient power"
+    severity: "WARN"
+    when: "power_level == AMBER OR power_level == RED"
+    match:
+      power_level: "AMBER"
+    then:
+      decision: "CONTINUE_TEST"
+      confidence: 0.7
+    reason: "Test is underpowered; gather more data before making a decision."
+    evidence:
+      - "Power is not sufficient"
+
+  - id: "CONTINUE_NOT_SIGNIFICANT"
+    title: "Not statistically significant yet"
+    severity: "INFO"
+    when: "p_value_level == AMBER"
+    match:
+      p_value_level: "AMBER"
+    then:
+      decision: "CONTINUE_TEST"
+      confidence: 0.65
+    reason: "Difference exists but not significant at the target alpha; keep running."
+    evidence:
+      - "p-value AMBER"
+
+  - id: "HUMAN_REVIEW_EFFECT_SIZE_AMBER"
+    title: "Significant but effect size is borderline"
+    severity: "WARN"
+    when: "p_value_level == GREEN AND effect_size_level == AMBER"
+    match:
+      p_value_level: "GREEN"
+      effect_size_level: "AMBER"
+    then:
+      decision: "HUMAN_REVIEW"
+      confidence: 0.7
+    reason: "Statistically significant but practical impact is borderline; review business context."
+    evidence:
+      - "effect size AMBER"
+
+  - id: "ESCALATE_MULTIPLE_REDS"
+    title: "Multiple critical red signals"
+    severity: "CRITICAL"
+    when: "At least two RED signals among (srm_level, roi_level, expected_loss_level)"
+    match: {}
+    then:
+      decision: "ESCALATE"
+      confidence: 0.95
+    reason: "Multiple critical issues detected; stop and investigate before proceeding."
+    evidence:
+      - "Multiple RED signals"
+
+  - id: "DEFAULT_CONTINUE"
+    title: "Default safe behavior"
+    severity: "INFO"
+    when: "No rule matched"
+    match: {}
+    then:
+      decision: "CONTINUE_TEST"
+      confidence: 0.55
+    reason: "Default decision is to continue testing until clear evidence is present."
+    evidence:
+      - "No policy rule matched"

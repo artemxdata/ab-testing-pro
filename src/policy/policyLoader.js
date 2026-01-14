@@ -1,21 +1,23 @@
-import { parsePolicies } from "./policyEngine";
+// src/policy/policyLoader.js
+import YAML from "yaml";
+
+// CRA serves files from /public at the app root.
+// But on GitHub Pages the app is under /ab-testing-pro.
+// Поэтому используем PUBLIC_URL.
+const BASE = (process.env.PUBLIC_URL || "").replace(/\/$/, "");
+const POLICIES_URL = `${BASE}/policies.yaml`;
 
 export async function loadPoliciesFromPublic() {
-  // IMPORTANT:
-  // CRA with "homepage" uses a base path (e.g. /ab-testing-pro).
-  // PUBLIC_URL handles both localhost and GitHub Pages.
-  const url = (process.env.PUBLIC_URL || "") + "/policies.yaml";
-
-  const res = await fetch(url, { cache: "no-store" });
+  const res = await fetch(POLICIES_URL, { cache: "no-store" });
   if (!res.ok) {
-    throw new Error(`Failed to fetch policies: ${res.status} ${res.statusText} (${url})`);
+    throw new Error(`Failed to fetch policies.yaml: HTTP ${res.status}`);
   }
-  const yamlText = await res.text();
+  const text = await res.text();
+  // YAML.parse will throw on invalid YAML
+  return YAML.parse(text);
+}
 
-  // If we still got HTML, it means the server fell back to index.html
-  if (yamlText.trim().startsWith("<!DOCTYPE html>")) {
-    throw new Error(`Policies URL returned HTML (SPA fallback). Check that ${url} exists in /public.`);
-  }
-
-  return parsePolicies(yamlText);
+// Alias for convenience (so imports "loadPolicies" won't break)
+export async function loadPolicies() {
+  return loadPoliciesFromPublic();
 }

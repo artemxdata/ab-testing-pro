@@ -1,30 +1,22 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { loadPolicies } from "../policy/policyLoader";
+import { loadPoliciesFromPublic } from "../policy/policyLoader";
 import { evaluatePolicies } from "../policy/policyEngine";
 import { buildSignals } from "../core/signals";
 
-type Props = {
-  pValue: number;
-  upliftPct: number;
-  // можно расширять позже: roiPct, expectedLoss, srmPValue, power...
-};
-
-export function PolicyDemoPanel({ pValue, upliftPct }: Props) {
+export function PolicyDemoPanel({ pValue, upliftPct }) {
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [decision, setDecision] = useState<any>(null);
+  const [error, setError] = useState(null);
+  const [decision, setDecision] = useState(null);
 
+  // Build minimal raw inputs for signals
   const signals = useMemo(() => {
-    // buildSignals — твой слой сигналов. Если у тебя другой интерфейс — подстроим,
-    // но смысл: один объект сигналов для policy engine.
     return buildSignals({
       p_value: pValue,
       uplift_pct: upliftPct,
-      // заглушки / можно вычислить позже:
-      power: 0.6,
-      roi_pct: upliftPct, // временно
-      expected_loss: 0.0,
-      srm_p_value: 1.0,
+      power: 0.6,          // пока заглушка
+      roi_pct: upliftPct,  // тоже заглушка (потом заменим на реальный ROI)
+      expected_loss: 0.0,  // заглушка
+      srm_p_value: 1.0,    // заглушка
     });
   }, [pValue, upliftPct]);
 
@@ -32,15 +24,16 @@ export function PolicyDemoPanel({ pValue, upliftPct }: Props) {
     let alive = true;
 
     async function run() {
-      setLoading(true);
-      setError(null);
-
       try {
-        const doc = await loadPolicies();
+        setLoading(true);
+        setError(null);
+
+        const doc = await loadPoliciesFromPublic();
         const res = evaluatePolicies(doc, signals);
+
         if (!alive) return;
         setDecision(res);
-      } catch (e: any) {
+      } catch (e) {
         if (!alive) return;
         setError(e?.message || String(e));
       } finally {
@@ -73,6 +66,19 @@ export function PolicyDemoPanel({ pValue, upliftPct }: Props) {
 
   if (!decision) return null;
 
+  const listForTable =
+    decision.triggeredRules && decision.triggeredRules.length
+      ? decision.triggeredRules
+      : [
+          {
+            id: "DEFAULT_CONTINUE",
+            title: "Default safe behavior",
+            severity: "INFO",
+            decision: decision.decision,
+            reason: "No policy rule matched",
+          },
+        ];
+
   return (
     <div className="mt-8 space-y-4">
       <div className="p-4 rounded-xl border border-gray-200">
@@ -83,26 +89,35 @@ export function PolicyDemoPanel({ pValue, upliftPct }: Props) {
           </div>
         </div>
 
-        <div className="mt-2 text-2xl font-black">
-          {decision.decision}
-        </div>
+        <div className="mt-2 text-2xl font-black">{decision.decision}</div>
 
         <div className="mt-3">
           <div className="font-semibold mb-2">Key Drivers</div>
           <ul className="list-disc pl-5 space-y-1 text-sm">
-            <li>Significance (p-value): <b>{signals.p_value_level}</b></li>
-            <li>Effect size: <b>{signals.effect_size_level}</b></li>
-            <li>Power: <b>{signals.power_level}</b></li>
-            <li>ROI: <b>{signals.roi_level}</b></li>
-            <li>Expected loss: <b>{signals.expected_loss_level}</b></li>
-            <li>SRM: <b>{signals.srm_level}</b></li>
+            <li>
+              Significance (p-value): <b>{signals.p_value_level}</b>
+            </li>
+            <li>
+              Effect size: <b>{signals.effect_size_level}</b>
+            </li>
+            <li>
+              ROI: <b>{signals.roi_level}</b>
+            </li>
+            <li>
+              Expected loss: <b>{signals.expected_loss_level}</b>
+            </li>
+            <li>
+              SRM: <b>{signals.srm_level}</b>
+            </li>
           </ul>
         </div>
       </div>
 
       <div className="p-4 rounded-xl border border-gray-200">
         <div className="font-bold">Decision Trace</div>
-        <div className="text-sm opacity-70">{decision.triggeredRules.length} rule(s) matched.</div>
+        <div className="text-sm opacity-70">
+          {decision.triggeredRules?.length || 0} rule(s) matched.
+        </div>
 
         <div className="mt-3 overflow-x-auto">
           <table className="min-w-full text-sm">
@@ -115,13 +130,7 @@ export function PolicyDemoPanel({ pValue, upliftPct }: Props) {
               </tr>
             </thead>
             <tbody>
-              {(decision.triggeredRules.length ? decision.triggeredRules : [{
-                id: "DEFAULT_CONTINUE",
-                title: "Default safe behavior",
-                severity: "INFO",
-                decision: decision.decision,
-                reason: "No policy rule matched",
-              }]).map((r: any) => (
+              {listForTable.map((r) => (
                 <tr key={r.id} className="border-b">
                   <td className="py-2 pr-4">
                     <div className="font-semibold">{r.title || r.id}</div>
@@ -139,7 +148,9 @@ export function PolicyDemoPanel({ pValue, upliftPct }: Props) {
 
       <details className="p-4 rounded-xl border border-gray-200">
         <summary className="cursor-pointer font-bold">Signals (debug)</summary>
-        <pre className="mt-3 text-xs overflow-x-auto">{JSON.stringify(signals, null, 2)}</pre>
+        <pre className="mt-3 text-xs overflow-x-auto">
+{JSON.stringify(signals, null, 2)}
+        </pre>
       </details>
     </div>
   );
