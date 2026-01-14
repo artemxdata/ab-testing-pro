@@ -1,6 +1,10 @@
 // src/policy/policyEngine.js
+import { evaluateWhen } from "./whenEvaluator";
+
 // Deterministic policy engine: YAML doc -> decision + triggeredRules
-// Rule matching is based on rule.match object (simple equality checks).
+// Matching order:
+// 1) rule.when (boolean expression) if present
+// 2) rule.match (simple equality object) if present
 
 export function evaluatePolicies(policyDoc, signals) {
   if (!policyDoc || typeof policyDoc !== "object") {
@@ -14,31 +18,34 @@ export function evaluatePolicies(policyDoc, signals) {
 
   const defaultDecision = policyDoc.defaultDecision || "CONTINUE_TEST";
   const defaultConfidence =
-    typeof policyDoc.defaultConfidence === "number"
-      ? policyDoc.defaultConfidence
-      : 0.55;
+    typeof policyDoc.defaultConfidence === "number" ? policyDoc.defaultConfidence : 0.55;
 
   const rules = Array.isArray(policyDoc.rules) ? policyDoc.rules : [];
-
   const triggeredRules = [];
 
   for (const rule of rules) {
     if (!rule || typeof rule !== "object") continue;
 
-    // If rule.match exists - use it as deterministic matching
-    const match = rule.match && typeof rule.match === "object" ? rule.match : null;
+    const hasWhen = typeof rule.when === "string" && rule.when.trim().length > 0;
+    const hasMatch = rule.match && typeof rule.match === "object";
 
-    let matched = true;
+    let matched = false;
 
-    if (match) {
-      for (const [k, v] of Object.entries(match)) {
-        if (signals?.[k] !== v) {
-          matched = false;
-          break;
+    try {
+      if (hasWhen) {
+        matched = evaluateWhen(rule.when, signals);
+      } else if (hasMatch) {
+        matched = true;
+        for (const [k, v] of Object.entries(rule.match)) {
+          if (signals?.[k] !== v) {
+            matched = false;
+            break;
+          }
         }
+      } else {
+        matched = false;
       }
-    } else {
-      // If no match object - consider rule not matchable (safe)
+    } catch (e) {
       matched = false;
     }
 
@@ -47,20 +54,16 @@ export function evaluatePolicies(policyDoc, signals) {
         id: rule.id || "RULE_NO_ID",
         title: rule.title || rule.id || "Untitled rule",
         severity: rule.severity || "INFO",
+        priority: typeof rule.priority === "number" ? rule.priority : 0,
         decision: rule.then?.decision || defaultDecision,
         confidence:
-          typeof rule.then?.confidence === "number"
-            ? rule.then.confidence
-            : defaultConfidence,
+          typeof rule.then?.confidence === "number" ? rule.then.confidence : defaultConfidence,
         reason: rule.reason || rule.then?.reason || "",
         evidence: Array.isArray(rule.evidence) ? rule.evidence : [],
       });
     }
   }
 
-  // Choose the strongest rule:
-  // - Prefer higher confidence
-  // - Tie-breaker by severity order
   if (triggeredRules.length === 0) {
     return {
       decision: defaultDecision,
@@ -76,10 +79,15 @@ export function evaluatePolicies(policyDoc, signals) {
     if (m === "HIGH") return 4;
     if (m === "MEDIUM") return 3;
     if (m === "LOW") return 2;
-    return 1; // INFO / unknown
+    return 1;
   };
 
+  // Choose "top" rule:
+  // 1) priority desc
+  // 2) confidence desc
+  // 3) severity desc
   triggeredRules.sort((a, b) => {
+    if (b.priority !== a.priority) return b.priority - a.priority;
     if (b.confidence !== a.confidence) return b.confidence - a.confidence;
     return severityRank(b.severity) - severityRank(a.severity);
   });

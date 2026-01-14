@@ -1,119 +1,79 @@
-import React, { useEffect, useMemo, useState } from "react";
+// src/ui/PolicyDemoPanel.tsx
+import React from "react";
 import DecisionCard from "./DecisionCard";
 import DecisionTrace from "./DecisionTrace";
 
-// ВАЖНО: эти импорты должны уже существовать у тебя в проекте
-import { loadPoliciesFromPublic } from "../policy/policyLoader";
-import { evaluatePolicies } from "../policy/policyEngine";
-import { buildSignals } from "../core/signals";
-
-export type PolicyResult = {
-  decision: string;
-  confidence: number;
-  triggeredRules: Array<{
-    id: string;
-    title?: string;
-    severity?: string;
-    decision?: string;
-    reason?: string;
-  }>;
-  signals: Record<string, any>;
-  policyVersion?: string;
-};
-
-type Props = {
+type PolicyDemoPanelProps = {
   pValue: number;
   upliftPct: number;
-  onResult?: (result: PolicyResult) => void; // <-- КЛЮЧЕВО: отдаём наверх
+  // NEW: single source of truth
+  signals: any;
+  policyResult: any;
+  policyError?: string | null;
+  policyDocLoaded?: boolean;
 };
 
-const PolicyDemoPanel: React.FC<Props> = ({ pValue, upliftPct, onResult }) => {
-  const [loading, setLoading] = useState(false);
-  const [policyError, setPolicyError] = useState<string | null>(null);
-  const [result, setResult] = useState<PolicyResult | null>(null);
-
-  // Сигналы считаем детерминированно из чисел
-  const signals = useMemo(() => {
-    // buildSignals — твоя функция ядра. Держим входы минимальными.
-    return buildSignals({
-      p_value: pValue,
-      uplift_pct: upliftPct,
-    });
-  }, [pValue, upliftPct]);
-
-  useEffect(() => {
-    let alive = true;
-
-    const run = async () => {
-      setLoading(true);
-      setPolicyError(null);
-
-      try {
-        const policies = await loadPoliciesFromPublic();
-
-        // evaluatePolicies — возвращает decision + confidence + triggeredRules
-        const evaluated = evaluatePolicies(policies, signals);
-
-        const res: PolicyResult = {
-          decision: evaluated.decision,
-          confidence: evaluated.confidence ?? policies?.defaultConfidence ?? 0.55,
-          triggeredRules: evaluated.triggeredRules ?? [],
-          signals,
-          policyVersion: policies?.version,
-        };
-
-        if (!alive) return;
-
-        setResult(res);
-        onResult?.(res);
-      } catch (e: any) {
-        if (!alive) return;
-        const msg = e?.message ? String(e.message) : "Unknown policy error";
-        setPolicyError(msg);
-        setResult(null);
-        onResult?.({
-          decision: "CONTINUE_TEST",
-          confidence: 0.55,
-          triggeredRules: [],
-          signals,
-        });
-      } finally {
-        if (alive) setLoading(false);
-      }
-    };
-
-    run();
-    return () => {
-      alive = false;
-    };
-  }, [signals, onResult]);
-
-  if (policyError) {
-    return (
-      <div className="mt-6 p-4 rounded-xl border border-red-300 bg-red-50 text-red-800">
-        <b>Policy Engine Error:</b> {policyError}
-      </div>
-    );
-  }
-
-  if (loading || !result) {
-    return (
-      <div className="mt-6 p-4 rounded-xl border border-gray-200 bg-white text-gray-700">
-        <b>Policy Engine:</b> {loading ? "Loading policies…" : "Waiting for decision…"}
-      </div>
-    );
-  }
+export default function PolicyDemoPanel({
+  pValue,
+  upliftPct,
+  signals,
+  policyResult,
+  policyError,
+  policyDocLoaded,
+}: PolicyDemoPanelProps) {
+  const decision = policyResult?.decision || "CONTINUE_TEST";
+  const confidence = policyResult?.confidence ?? 0.55;
+  const triggeredRules = policyResult?.triggeredRules || [];
 
   return (
-    <div className="mt-6 space-y-4">
-      <DecisionCard decision={result.decision} confidence={result.confidence} />
-      <DecisionTrace triggeredRules={result.triggeredRules} />
-      <div className="p-4 rounded-xl border border-gray-200 bg-white">
-        <div className="font-semibold mb-2">Signals (debug)</div>
-        <pre className="text-xs overflow-auto">{JSON.stringify(result.signals, null, 2)}</pre>
+    <div className="mt-8">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+          ⏳ Policy Decision
+        </h3>
+        <div className="text-sm text-gray-600 dark:text-gray-300">
+          Decision is produced by YAML policies (deterministic engine)
+        </div>
+      </div>
+
+      {!policyDocLoaded && !policyError && (
+        <div className="mb-4 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 text-sm">
+          ⏳ Policy Engine: Loading policies…
+        </div>
+      )}
+
+      {policyError && (
+        <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200 text-sm">
+          ⚠️ Policy load error: {policyError}
+        </div>
+      )}
+
+      <DecisionCard
+        decision={decision}
+        confidence={confidence}
+        // these are not critical; DecisionCard uses signals for badges
+        signals={signals}
+      />
+
+      <DecisionTrace triggeredRules={triggeredRules} />
+
+      <div className="mt-4">
+        <div className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
+          Signals (debug)
+        </div>
+        <pre className="text-xs p-4 rounded-xl bg-gray-50 dark:bg-gray-900/60 text-gray-800 dark:text-gray-100 overflow-auto border border-gray-200 dark:border-gray-700">
+          {JSON.stringify(
+            {
+              p_value: pValue,
+              uplift_pct: upliftPct,
+              ...signals,
+            },
+            null,
+            2
+          )}
+        </pre>
       </div>
     </div>
   );
-};
+}
 
-export default PolicyDemoPanel;
