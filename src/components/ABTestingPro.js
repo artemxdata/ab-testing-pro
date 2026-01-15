@@ -22,7 +22,7 @@ const ABTestingPro = () => {
   const [expectedSplitB, setExpectedSplitB] = useState(50); // %
 
   const [isAnimating, setIsAnimating] = useState(false);
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(true); // ✅ dark default
   const [activeTab, setActiveTab] = useState("calculator");
 
   // policy state
@@ -348,7 +348,6 @@ const ABTestingPro = () => {
   }
 
   // ---------- UI helpers ----------
-
   const cardBase = `rounded-2xl border p-6 shadow-xl ${
     darkMode ? "bg-slate-900/60 border-slate-800 text-slate-100" : "bg-white border-gray-200 text-gray-900"
   }`;
@@ -408,11 +407,11 @@ const ABTestingPro = () => {
           </div>
         </header>
 
-        {/* ---------------- CALCULATOR TAB (3 columns) ---------------- */}
+        {/* ---------------- CALCULATOR TAB (DASHBOARD GRID) ---------------- */}
         {activeTab === "calculator" && (
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-            {/* LEFT: Inputs */}
-            <div className="xl:col-span-4 space-y-6">
+          <div className="grid grid-cols-12 gap-6">
+            {/* LEFT */}
+            <div className="col-span-12 lg:col-span-4 space-y-6">
               {/* A/B Inputs card */}
               <div className={cardBase}>
                 <div className="flex items-center justify-between mb-5">
@@ -496,38 +495,6 @@ const ABTestingPro = () => {
                         />
                       </div>
                     </div>
-                  </div>
-
-                  {/* Actions under inputs */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <button
-                      onClick={loadSampleData}
-                      disabled={isAnimating}
-                      className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isAnimating ? "🔄 Loading..." : "📊 Load Sample"}
-                    </button>
-
-                    <button
-                      onClick={generateRandomData}
-                      disabled={isAnimating}
-                      className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isAnimating ? "🎲 Generating..." : "🎲 Random Test"}
-                    </button>
-                  </div>
-
-                  {/* Preset buttons row (inserted рядом с Actions) */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
-                    {Object.values(presets).map((p) => (
-                      <button
-                        key={p.name}
-                        onClick={() => applyPreset(p)}
-                        className="px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm font-semibold text-gray-800 dark:text-gray-100"
-                      >
-                        {p.name}
-                      </button>
-                    ))}
                   </div>
                 </div>
               </div>
@@ -621,8 +588,8 @@ const ABTestingPro = () => {
               </div>
             </div>
 
-            {/* CENTER: Results + Main Decision */}
-            <div className="xl:col-span-5 space-y-6">
+            {/* CENTER */}
+            <div className="col-span-12 lg:col-span-5 space-y-6">
               {/* Results header card */}
               <div className={cardBase}>
                 <div className="flex items-center justify-between mb-5">
@@ -676,17 +643,62 @@ const ABTestingPro = () => {
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* RIGHT: Policies / Trace */}
-            <div className="xl:col-span-3 space-y-6">
+              {/* Actions + Presets (moved to CENTER) */}
               <div className={cardBase}>
                 <div className="flex items-center justify-between mb-5">
                   <div className="text-left">
-                    <h3 className="text-xl font-extrabold">Policy Trace</h3>
+                    <h3 className="text-xl font-extrabold">Actions</h3>
+                    <p className={`${darkMode ? "text-slate-300" : "text-gray-600"} text-sm`}>Quick scenarios & controls</p>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-semibold ${darkMode ? "bg-slate-800 text-slate-200" : "bg-gray-100 text-gray-700"}`}>
+                    Tools
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    onClick={loadSampleData}
+                    disabled={isAnimating}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isAnimating ? "🔄 Loading..." : "📊 Load Sample"}
+                  </button>
+
+                  <button
+                    onClick={generateRandomData}
+                    disabled={isAnimating}
+                    className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isAnimating ? "🎲 Generating..." : "🎲 Random Test"}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+                  {Object.values(presets).map((p) => (
+                    <button
+                      key={p.name}
+                      onClick={() => applyPreset(p)}
+                      className="px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm font-semibold text-gray-800 dark:text-gray-100"
+                    >
+                      {p.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT */}
+            <div className="col-span-12 lg:col-span-3 space-y-6">
+              <div className={cardBase}>
+                <div className="flex items-center justify-between mb-5">
+                  <div className="text-left">
+                    <h3 className="text-xl font-extrabold">Decision & Trace</h3>
                     <p className={`${darkMode ? "text-slate-300" : "text-gray-600"} text-sm`}>Rules & rationale</p>
                   </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-semibold ${darkMode ? "bg-slate-800 text-slate-200" : "bg-gray-100 text-gray-700"}`}>Audit</div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-semibold ${darkMode ? "bg-slate-800 text-slate-200" : "bg-gray-100 text-gray-700"}`}>
+                    Audit
+                  </div>
                 </div>
 
                 <PolicyDemoPanel
@@ -708,7 +720,9 @@ const ABTestingPro = () => {
             <div className="grid lg:grid-cols-2 gap-6">
               <div className={`p-6 rounded-xl border ${darkMode ? "border-slate-800 bg-slate-950/40" : "border-gray-200 bg-gray-50"}`}>
                 <h3 className="text-xl font-bold mb-4">📈 Performance Analysis</h3>
-                <p className={`${darkMode ? "text-slate-200" : "text-gray-700"}`}>Your test shows {Math.abs(improvement).toFixed(1)}% difference between variants.</p>
+                <p className={`${darkMode ? "text-slate-200" : "text-gray-700"}`}>
+                  Your test shows {Math.abs(improvement).toFixed(1)}% difference between variants.
+                </p>
               </div>
               <div className={`p-6 rounded-xl border ${darkMode ? "border-slate-800 bg-slate-950/40" : "border-gray-200 bg-gray-50"}`}>
                 <h3 className="text-xl font-bold mb-4">🎯 Recommendations</h3>
@@ -726,7 +740,9 @@ const ABTestingPro = () => {
             <div className="text-center py-12">
               <div className="text-6xl mb-4">📊</div>
               <p className={`text-xl ${darkMode ? "text-slate-300" : "text-gray-600"}`}>Test history feature coming soon!</p>
-              <p className={`${darkMode ? "text-slate-400" : "text-gray-500"} mt-2`}>Track your experiments over time with detailed analytics.</p>
+              <p className={`${darkMode ? "text-slate-400" : "text-gray-500"} mt-2`}>
+                Track your experiments over time with detailed analytics.
+              </p>
             </div>
           </div>
         )}

@@ -29,11 +29,8 @@ export default function PolicyDemoPanel({
     <div className="mt-8">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-          ⏳ Policy Decision
+          Decision & Trace
         </h3>
-        <div className="text-sm text-gray-600 dark:text-gray-300">
-          Decision is produced by YAML policies (deterministic engine)
-        </div>
       </div>
 
       {!policyDocLoaded && !policyError && (
