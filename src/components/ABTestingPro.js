@@ -1,10 +1,10 @@
 // src/components/ABTestingPro.js
 import React, { useEffect, useMemo, useState } from "react";
 
-import PolicyDemoPanel from "../ui/PolicyDemoPanel";
-import { loadPoliciesFromPublic } from "../policy/policyLoader";
-import { evaluatePolicies } from "../policy/policyEngine";
-import { buildSignals } from "../core/signals";
+import { PolicyDemoPanel } from "../ui";
+import { loadPoliciesFromPublic } from "../policy";
+import { evaluatePolicies } from "../policy";
+import { buildSignals } from "../core";
 
 const ABTestingPro = () => {
   const [controlVisitors, setControlVisitors] = useState(1000);

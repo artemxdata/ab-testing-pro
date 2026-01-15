@@ -1,7 +1,7 @@
 // src/ui/PolicyDemoPanel.tsx
 import React from "react";
-import DecisionCard from "./DecisionCard";
-import DecisionTrace from "./DecisionTrace";
+import DecisionCard from "./DecisionCard.tsx";
+import DecisionTrace from "./DecisionTrace.tsx";
 
 type PolicyDemoPanelProps = {
   pValue: number;
