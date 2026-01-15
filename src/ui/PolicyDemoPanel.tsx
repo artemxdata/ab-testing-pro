@@ -57,11 +57,12 @@ export default function PolicyDemoPanel({
 
       <DecisionTrace triggeredRules={triggeredRules} />
 
-      <div className="mt-4">
-        <div className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
+      {/* Debug under spoiler */}
+      <details className="mt-4">
+        <summary className="cursor-pointer text-sm font-semibold text-gray-700 dark:text-gray-200 opacity-80">
           Signals (debug)
-        </div>
-        <pre className="text-xs p-4 rounded-xl bg-gray-50 dark:bg-gray-900/60 text-gray-800 dark:text-gray-100 overflow-auto border border-gray-200 dark:border-gray-700">
+        </summary>
+        <pre className="mt-2 text-xs p-4 rounded-xl bg-gray-50 dark:bg-gray-900/60 text-gray-800 dark:text-gray-100 overflow-auto border border-gray-200 dark:border-gray-700">
           {JSON.stringify(
             {
               p_value: pValue,
@@ -72,7 +73,7 @@ export default function PolicyDemoPanel({
             2
           )}
         </pre>
-      </div>
+      </details>
     </div>
   );
 }

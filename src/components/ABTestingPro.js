@@ -22,7 +22,7 @@ const ABTestingPro = () => {
   const [expectedSplitB, setExpectedSplitB] = useState(50); // %
 
   const [isAnimating, setIsAnimating] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
   const [activeTab, setActiveTab] = useState("calculator");
 
   // policy state
@@ -80,18 +80,14 @@ const ABTestingPro = () => {
 
     const p1 = controlConversions / controlVisitors;
     const p2 = treatmentConversions / treatmentVisitors;
-    const pooledRate =
-      (controlConversions + treatmentConversions) / (controlVisitors + treatmentVisitors);
+    const pooledRate = (controlConversions + treatmentConversions) / (controlVisitors + treatmentVisitors);
 
-    const se = Math.sqrt(
-      pooledRate * (1 - pooledRate) * (1 / controlVisitors + 1 / treatmentVisitors)
-    );
+    const se = Math.sqrt(pooledRate * (1 - pooledRate) * (1 / controlVisitors + 1 / treatmentVisitors));
     return se > 0 ? (p2 - p1) / se : 0;
   }, [controlVisitors, treatmentVisitors, controlConversions, treatmentConversions]);
 
   // --- Correct normal CDF & p-value (two-tailed) ---
   const pValue = useMemo(() => {
-    // Error function (Abramowitz–Stegun approximation)
     const erf = (x) => {
       const sign = x >= 0 ? 1 : -1;
       x = Math.abs(x);
@@ -104,15 +100,11 @@ const ABTestingPro = () => {
       const p = 0.3275911;
 
       const t = 1.0 / (1.0 + p * x);
-      const y =
-        1.0 -
-        (((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-x * x));
-
+      const y = 1.0 - (((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-x * x));
       return sign * y;
     };
 
     const normalCdf = (z) => 0.5 * (1 + erf(z / Math.SQRT2));
-
     const raw = zScore === 0 ? 1 : 2 * (1 - normalCdf(Math.abs(zScore)));
     const bounded = Math.max(0, Math.min(1, raw));
 
@@ -124,10 +116,9 @@ const ABTestingPro = () => {
   const upliftRate = useMemo(() => {
     const p1 = controlVisitors > 0 ? controlConversions / controlVisitors : 0;
     const p2 = treatmentVisitors > 0 ? treatmentConversions / treatmentVisitors : 0;
-    return p2 - p1; // absolute uplift (rate)
+    return p2 - p1;
   }, [controlVisitors, controlConversions, treatmentVisitors, treatmentConversions]);
 
-  // incremental conversions estimate for same traffic as treatment group
   const incrementalConversions = useMemo(() => {
     return treatmentVisitors * upliftRate;
   }, [treatmentVisitors, upliftRate]);
@@ -136,7 +127,6 @@ const ABTestingPro = () => {
     return incrementalConversions * Number(revenuePerConversion || 0);
   }, [incrementalConversions, revenuePerConversion]);
 
-  // Cost per visitor (MVP): distribute testCost across total test traffic
   const costPerVisitor = useMemo(() => {
     const total = Math.max(1, controlVisitors + treatmentVisitors);
     const cost = Number(testCost || 0);
@@ -149,24 +139,21 @@ const ABTestingPro = () => {
     return ((incrementalRevenue - cost) / cost) * 100;
   }, [incrementalRevenue, testCost]);
 
-  // Expected loss proxy in EUR
   const expectedLossEuro = useMemo(() => {
     const base = Math.abs(incrementalRevenue);
     if (!Number.isFinite(base) || base <= 0) return 0;
     const penalty = Number(riskPenaltyPct || 0) / 100;
 
-    const uncertainty = Math.min(1, Math.max(0, pValue)); // 0..1
-    return base * penalty * uncertainty; // €
+    const uncertainty = Math.min(1, Math.max(0, pValue));
+    return base * penalty * uncertainty;
   }, [incrementalRevenue, riskPenaltyPct, pValue]);
 
-  // Expected loss normalized rate (share of test cost) for policy thresholds
   const expectedLossRate = useMemo(() => {
     const cost = Number(testCost || 0);
     if (cost <= 0) return 0;
-    return Number(expectedLossEuro || 0) / cost; // fraction of test cost
+    return Number(expectedLossEuro || 0) / cost;
   }, [expectedLossEuro, testCost]);
 
-  // Power approx (very rough): map |z| to [0..1]
   const power = useMemo(() => {
     const z = Math.abs(zScore);
     if (!Number.isFinite(z)) return 0;
@@ -174,7 +161,7 @@ const ABTestingPro = () => {
     return Math.max(0, Math.min(1, v));
   }, [zScore]);
 
-  // ---------- dark mode (optional) ----------
+  // ---------- dark mode ----------
   useEffect(() => {
     if (darkMode) document.documentElement.classList.add("dark");
     else document.documentElement.classList.remove("dark");
@@ -209,16 +196,13 @@ const ABTestingPro = () => {
       n_control: controlVisitors,
       n_treatment: treatmentVisitors,
 
-      // expected split as % (0..100)
       expected_split_a: Number(expectedSplitA || 50),
       expected_split_b: Number(expectedSplitB || 50),
 
-      // бизнес
       revenue_per_conversion: Number(revenuePerConversion || 0),
       cost_per_visitor: Number(costPerVisitor || 0),
       roi_pct: Number(roiPct || 0),
 
-      // expected loss в "rate" (0..1), не евро:
       expected_loss: Number(expectedLossRate || 0),
 
       power: Number(power || 0),
@@ -292,8 +276,8 @@ const ABTestingPro = () => {
     setIsAnimating(true);
     setTimeout(() => {
       const baseVisitors = Math.floor(Math.random() * 5000) + 1000;
-      const baseRate = Math.random() * 0.15 + 0.02; // 2-17%
-      const lift = (Math.random() - 0.5) * 0.6; // -30% to +30%
+      const baseRate = Math.random() * 0.15 + 0.02;
+      const lift = (Math.random() - 0.5) * 0.6;
 
       const aVisitors = baseVisitors;
       const bVisitors = baseVisitors + Math.floor(Math.random() * 200 - 100);
@@ -310,16 +294,13 @@ const ABTestingPro = () => {
   };
 
   // ---------- UI helpers ----------
-  const getConfidenceTone = () => {
-    return decisionMeta.tone;
-  };
+
+  const cardBase = `rounded-2xl border p-6 shadow-xl ${
+    darkMode ? "bg-slate-900/60 border-slate-800 text-slate-100" : "bg-white border-gray-200 text-gray-900"
+  }`;
 
   return (
-    <div
-      className={`min-h-screen transition-all duration-300 ${
-        darkMode ? "bg-gray-900" : "bg-gradient-to-br from-indigo-50 via-white to-cyan-50"
-      }`}
-    >
+    <div className={`min-h-screen transition-all duration-300 ${darkMode ? "bg-gray-900" : "bg-gradient-to-br from-indigo-50 via-white to-cyan-50"}`}>
       <div className="relative z-10 container mx-auto px-4 max-w-6xl">
         {/* Header */}
         <header className="text-center py-10">
@@ -329,21 +310,15 @@ const ABTestingPro = () => {
                 <span className="text-2xl">🎯</span>
               </div>
               <div className="text-left">
-                <h1 className={`text-4xl font-black ${darkMode ? "text-white" : "text-gray-900"}`}>
-                  A/B Testing Pro
-                </h1>
-                <p className={`${darkMode ? "text-gray-300" : "text-gray-600"} font-medium`}>
-                  Professional Statistical Analysis Platform
-                </p>
+                <h1 className={`text-4xl font-black ${darkMode ? "text-white" : "text-gray-900"}`}>A/B Testing Pro</h1>
+                <p className={`${darkMode ? "text-gray-300" : "text-gray-600"} font-medium`}>Professional Statistical Analysis Platform</p>
               </div>
             </div>
 
             <button
               onClick={() => setDarkMode((v) => !v)}
               className={`p-3 rounded-xl transition-all duration-200 ${
-                darkMode
-                  ? "bg-yellow-500 text-gray-900 hover:bg-yellow-400"
-                  : "bg-gray-800 text-yellow-400 hover:bg-gray-700"
+                darkMode ? "bg-yellow-500 text-gray-900 hover:bg-yellow-400" : "bg-gray-800 text-yellow-400 hover:bg-gray-700"
               }`}
               aria-label="Toggle dark mode"
             >
@@ -352,11 +327,7 @@ const ABTestingPro = () => {
           </div>
 
           {/* Tabs */}
-          <div
-            className={`flex justify-center space-x-1 p-1 rounded-xl ${
-              darkMode ? "bg-gray-800" : "bg-white"
-            } shadow-lg max-w-md mx-auto`}
-          >
+          <div className={`flex justify-center space-x-1 p-1 rounded-xl ${darkMode ? "bg-gray-800" : "bg-white"} shadow-lg max-w-md mx-auto`}>
             {[
               { id: "calculator", icon: "📊" },
               { id: "insights", icon: "🧠" },
@@ -379,408 +350,316 @@ const ABTestingPro = () => {
           </div>
         </header>
 
+        {/* ---------------- CALCULATOR TAB (3 columns) ---------------- */}
         {activeTab === "calculator" && (
-          <div className="space-y-8">
-            {/* Inputs */}
-            <div className="grid lg:grid-cols-2 gap-8">
-              {/* Control */}
-              <div
-                className={`${darkMode ? "bg-gray-800" : "bg-white"} rounded-2xl p-8 shadow-2xl border ${
-                  darkMode ? "border-gray-700" : "border-gray-100"
-                }`}
-              >
-                <div className="flex items-center space-x-3 mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
-                    <span className="text-2xl font-bold text-white">A</span>
-                  </div>
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+            {/* LEFT: Inputs */}
+            <div className="xl:col-span-4 space-y-6">
+              {/* A/B Inputs card */}
+              <div className={cardBase}>
+                <div className="flex items-center justify-between mb-5">
                   <div className="text-left">
-                    <h2 className={`text-2xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
-                      Control Group
-                    </h2>
-                    <p className={`${darkMode ? "text-gray-400" : "text-gray-600"}`}>Baseline variant</p>
+                    <h2 className="text-xl font-extrabold">Inputs</h2>
+                    <p className={`${darkMode ? "text-slate-300" : "text-gray-600"} text-sm`}>Traffic & conversions</p>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-semibold ${darkMode ? "bg-slate-800 text-slate-200" : "bg-gray-100 text-gray-700"}`}>
+                    A/B
                   </div>
                 </div>
 
                 <div className="space-y-6">
-                  <div>
-                    <label
-                      className={`block text-sm font-semibold mb-2 ${
-                        darkMode ? "text-gray-300" : "text-gray-700"
-                      }`}
-                    >
-                      👥 Visitors
-                    </label>
-                    <input
-                      type="number"
-                      className={`w-full px-4 py-3 rounded-xl border-2 font-semibold text-lg ${
-                        darkMode
-                          ? "bg-gray-700 border-gray-600 text-white focus:border-blue-500"
-                          : "bg-gray-50 border-gray-200 text-gray-900 focus:border-blue-500"
-                      }`}
-                      value={controlVisitors}
-                      onChange={(e) => setControlVisitors(clampInt(e.target.value))}
-                    />
+                  {/* Control */}
+                  <div className={`rounded-xl border p-4 ${darkMode ? "border-slate-800 bg-slate-950/40" : "border-gray-200 bg-gray-50"}`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-blue-600 text-white font-bold">A</span>
+                        <span className="font-semibold">Control</span>
+                      </div>
+                      <span className={`${darkMode ? "text-slate-300" : "text-gray-600"} text-sm`}>
+                        {controlRate.toFixed(2)}%
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={`block text-xs font-semibold mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>
+                          Visitors
+                        </label>
+                        <input
+                          type="number"
+                          className={`w-full px-3 py-2 rounded-xl border font-semibold ${
+                            darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-900"
+                          }`}
+                          value={controlVisitors}
+                          onChange={(e) => setControlVisitors(clampInt(e.target.value))}
+                        />
+                      </div>
+                      <div>
+                        <label className={`block text-xs font-semibold mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>
+                          Conversions
+                        </label>
+                        <input
+                          type="number"
+                          className={`w-full px-3 py-2 rounded-xl border font-semibold ${
+                            darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-900"
+                          }`}
+                          value={controlConversions}
+                          onChange={(e) => setControlConversions(clampInt(e.target.value))}
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                  <div>
-                    <label
-                      className={`block text-sm font-semibold mb-2 ${
-                        darkMode ? "text-gray-300" : "text-gray-700"
-                      }`}
-                    >
-                      ✅ Conversions
-                    </label>
-                    <input
-                      type="number"
-                      className={`w-full px-4 py-3 rounded-xl border-2 font-semibold text-lg ${
-                        darkMode
-                          ? "bg-gray-700 border-gray-600 text-white focus:border-blue-500"
-                          : "bg-gray-50 border-gray-200 text-gray-900 focus:border-blue-500"
-                      }`}
-                      value={controlConversions}
-                      onChange={(e) => setControlConversions(clampInt(e.target.value))}
-                    />
+                  {/* Treatment */}
+                  <div className={`rounded-xl border p-4 ${darkMode ? "border-slate-800 bg-slate-950/40" : "border-gray-200 bg-gray-50"}`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-600 text-white font-bold">B</span>
+                        <span className="font-semibold">Treatment</span>
+                      </div>
+                      <span className={`${darkMode ? "text-slate-300" : "text-gray-600"} text-sm`}>
+                        {treatmentRate.toFixed(2)}%
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={`block text-xs font-semibold mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>
+                          Visitors
+                        </label>
+                        <input
+                          type="number"
+                          className={`w-full px-3 py-2 rounded-xl border font-semibold ${
+                            darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-900"
+                          }`}
+                          value={treatmentVisitors}
+                          onChange={(e) => setTreatmentVisitors(clampInt(e.target.value))}
+                        />
+                      </div>
+                      <div>
+                        <label className={`block text-xs font-semibold mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>
+                          Conversions
+                        </label>
+                        <input
+                          type="number"
+                          className={`w-full px-3 py-2 rounded-xl border font-semibold ${
+                            darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-900"
+                          }`}
+                          value={treatmentConversions}
+                          onChange={(e) => setTreatmentConversions(clampInt(e.target.value))}
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                  <div
-                    className={`p-6 rounded-xl ${
-                      darkMode ? "bg-blue-900/30" : "bg-blue-50"
-                    } border-2 border-blue-200`}
-                  >
-                    <p
-                      className={`text-sm font-medium mb-2 ${
-                        darkMode ? "text-blue-300" : "text-blue-700"
-                      }`}
+                  {/* Actions under inputs */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      onClick={loadSampleData}
+                      disabled={isAnimating}
+                      className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Conversion Rate
-                    </p>
-                    <p
-                      className={`text-4xl font-black ${isAnimating ? "animate-pulse" : ""} ${
-                        darkMode ? "text-blue-400" : "text-blue-600"
-                      }`}
+                      {isAnimating ? "🔄 Loading..." : "📊 Load Sample"}
+                    </button>
+
+                    <button
+                      onClick={generateRandomData}
+                      disabled={isAnimating}
+                      className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-3 px-4 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {controlRate.toFixed(2)}%
-                    </p>
+                      {isAnimating ? "🎲 Generating..." : "🎲 Random Test"}
+                    </button>
                   </div>
                 </div>
               </div>
 
-              {/* Treatment */}
-              <div
-                className={`${darkMode ? "bg-gray-800" : "bg-white"} rounded-2xl p-8 shadow-2xl border ${
-                  darkMode ? "border-gray-700" : "border-gray-100"
-                }`}
-              >
-                <div className="flex items-center space-x-3 mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
-                    <span className="text-2xl font-bold text-white">B</span>
-                  </div>
+              {/* Business Inputs card */}
+              <div className={cardBase}>
+                <div className="flex items-center justify-between mb-5">
                   <div className="text-left">
-                    <h2 className={`text-2xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
-                      Treatment Group
-                    </h2>
-                    <p className={`${darkMode ? "text-gray-400" : "text-gray-600"}`}>Test variant</p>
+                    <h3 className="text-xl font-extrabold">Business Inputs</h3>
+                    <p className={`${darkMode ? "text-slate-300" : "text-gray-600"} text-sm`}>ROI & risk assumptions</p>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-semibold ${darkMode ? "bg-slate-800 text-slate-200" : "bg-gray-100 text-gray-700"}`}>
+                    MVP
                   </div>
                 </div>
 
-                <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label
-                      className={`block text-sm font-semibold mb-2 ${
-                        darkMode ? "text-gray-300" : "text-gray-700"
-                      }`}
-                    >
-                      👥 Visitors
+                    <label className={`block text-xs font-semibold mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>
+                      Revenue / conversion (€)
                     </label>
                     <input
                       type="number"
-                      className={`w-full px-4 py-3 rounded-xl border-2 font-semibold text-lg ${
-                        darkMode
-                          ? "bg-gray-700 border-gray-600 text-white focus:border-green-500"
-                          : "bg-gray-50 border-gray-200 text-gray-900 focus:border-green-500"
+                      className={`w-full px-3 py-2 rounded-xl border font-semibold ${
+                        darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-900"
                       }`}
-                      value={treatmentVisitors}
-                      onChange={(e) => setTreatmentVisitors(clampInt(e.target.value))}
+                      value={revenuePerConversion}
+                      onChange={(e) => setRevenuePerConversion(Number(e.target.value))}
                     />
                   </div>
 
                   <div>
-                    <label
-                      className={`block text-sm font-semibold mb-2 ${
-                        darkMode ? "text-gray-300" : "text-gray-700"
-                      }`}
-                    >
-                      ✅ Conversions
+                    <label className={`block text-xs font-semibold mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>
+                      Test cost (€)
                     </label>
                     <input
                       type="number"
-                      className={`w-full px-4 py-3 rounded-xl border-2 font-semibold text-lg ${
-                        darkMode
-                          ? "bg-gray-700 border-gray-600 text-white focus:border-green-500"
-                          : "bg-gray-50 border-gray-200 text-gray-900 focus:border-green-500"
+                      className={`w-full px-3 py-2 rounded-xl border font-semibold ${
+                        darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-900"
                       }`}
-                      value={treatmentConversions}
-                      onChange={(e) => setTreatmentConversions(clampInt(e.target.value))}
+                      value={testCost}
+                      onChange={(e) => setTestCost(Number(e.target.value))}
                     />
                   </div>
 
-                  <div
-                    className={`p-6 rounded-xl ${
-                      darkMode ? "bg-green-900/30" : "bg-green-50"
-                    } border-2 border-green-200`}
-                  >
-                    <p
-                      className={`text-sm font-medium mb-2 ${
-                        darkMode ? "text-green-300" : "text-green-700"
+                  <div>
+                    <label className={`block text-xs font-semibold mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>
+                      Risk penalty (%)
+                    </label>
+                    <input
+                      type="number"
+                      className={`w-full px-3 py-2 rounded-xl border font-semibold ${
+                        darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-900"
                       }`}
-                    >
-                      Conversion Rate
-                    </p>
-                    <p
-                      className={`text-4xl font-black ${isAnimating ? "animate-pulse" : ""} ${
-                        darkMode ? "text-green-400" : "text-green-600"
+                      value={riskPenaltyPct}
+                      onChange={(e) => setRiskPenaltyPct(Number(e.target.value))}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={`block text-xs font-semibold mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>
+                      Expected split A (%)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      className={`w-full px-3 py-2 rounded-xl border font-semibold ${
+                        darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-900"
                       }`}
-                    >
-                      {treatmentRate.toFixed(2)}%
-                    </p>
+                      value={expectedSplitA}
+                      onChange={(e) => handleExpectedSplitAChange(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={`block text-xs font-semibold mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>
+                      Expected split B (%)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      className={`w-full px-3 py-2 rounded-xl border font-semibold ${
+                        darkMode ? "bg-slate-900 border-slate-700 text-white" : "bg-white border-gray-200 text-gray-900"
+                      }`}
+                      value={expectedSplitB}
+                      onChange={(e) => handleExpectedSplitBChange(e.target.value)}
+                    />
+                  </div>
+
+                  <div className={`sm:col-span-2 rounded-xl border p-3 ${darkMode ? "border-slate-800 bg-slate-950/40" : "border-gray-200 bg-gray-50"}`}>
+                    <div className={`text-sm ${darkMode ? "text-slate-200" : "text-gray-800"}`}>
+                      <span className="font-semibold">ROI:</span> {roiPct.toFixed(1)}% ·{" "}
+                      <span className="font-semibold">Expected loss:</span> €{expectedLossEuro.toFixed(0)} ·{" "}
+                      <span className="font-semibold">Power:</span> {(power * 100).toFixed(0)}% ·{" "}
+                      <span className="font-semibold">Cost/visitor:</span> €{costPerVisitor.toFixed(4)}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Business Inputs (MVP) - placed before Results Dashboard */}
-            <div
-              className={`${darkMode ? "bg-gray-800" : "bg-white"} rounded-2xl p-6 shadow-2xl border ${
-                darkMode ? "border-gray-700" : "border-gray-100"
-              }`}
-            >
-              <h3 className={`text-xl font-bold mb-4 ${darkMode ? "text-white" : "text-gray-900"}`}>
-                💰 Business Inputs (MVP)
-              </h3>
-
-              <div className="grid md:grid-cols-5 gap-4">
-                <div>
-                  <label
-                    className={`block text-sm font-semibold mb-2 ${
-                      darkMode ? "text-gray-300" : "text-gray-700"
-                    }`}
-                  >
-                    Revenue per conversion (€)
-                  </label>
-                  <input
-                    type="number"
-                    className={`w-full px-4 py-3 rounded-xl border-2 font-semibold ${
-                      darkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-gray-50 border-gray-200 text-gray-900"
-                    }`}
-                    value={revenuePerConversion}
-                    onChange={(e) => setRevenuePerConversion(Number(e.target.value))}
-                  />
+            {/* CENTER: Results + Main Decision */}
+            <div className="xl:col-span-5 space-y-6">
+              {/* Results header card */}
+              <div className={cardBase}>
+                <div className="flex items-center justify-between mb-5">
+                  <div className="text-left">
+                    <h2 className="text-xl font-extrabold">Statistical Results</h2>
+                    <p className={`${darkMode ? "text-slate-300" : "text-gray-600"} text-sm`}>
+                      Key metrics snapshot
+                    </p>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-semibold ${darkMode ? "bg-slate-800 text-slate-200" : "bg-gray-100 text-gray-700"}`}>
+                    Live
+                  </div>
                 </div>
 
-                <div>
-                  <label
-                    className={`block text-sm font-semibold mb-2 ${
-                      darkMode ? "text-gray-300" : "text-gray-700"
-                    }`}
-                  >
-                    Test cost (€)
-                  </label>
-                  <input
-                    type="number"
-                    className={`w-full px-4 py-3 rounded-xl border-2 font-semibold ${
-                      darkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-gray-50 border-gray-200 text-gray-900"
-                    }`}
-                    value={testCost}
-                    onChange={(e) => setTestCost(Number(e.target.value))}
-                  />
-                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className={`rounded-xl border p-4 ${darkMode ? "border-slate-800 bg-slate-950/40" : "border-gray-200 bg-gray-50"}`}>
+                    <p className={`${darkMode ? "text-slate-300" : "text-gray-700"} text-xs font-semibold mb-1`}>
+                      📈 Improvement
+                    </p>
+                    <p className={`text-2xl font-black ${improvement >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                      {improvement >= 0 ? "+" : ""}
+                      {improvement.toFixed(1)}%
+                    </p>
+                  </div>
 
-                <div>
-                  <label
-                    className={`block text-sm font-semibold mb-2 ${
-                      darkMode ? "text-gray-300" : "text-gray-700"
-                    }`}
-                  >
-                    Risk penalty (%)
-                  </label>
-                  <input
-                    type="number"
-                    className={`w-full px-4 py-3 rounded-xl border-2 font-semibold ${
-                      darkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-gray-50 border-gray-200 text-gray-900"
-                    }`}
-                    value={riskPenaltyPct}
-                    onChange={(e) => setRiskPenaltyPct(Number(e.target.value))}
-                  />
-                </div>
+                  <div className={`rounded-xl border p-4 ${darkMode ? "border-slate-800 bg-slate-950/40" : "border-gray-200 bg-gray-50"}`}>
+                    <p className={`${darkMode ? "text-slate-300" : "text-gray-700"} text-xs font-semibold mb-1`}>
+                      📊 Z-Score
+                    </p>
+                    <p className={`text-2xl font-black ${darkMode ? "text-sky-300" : "text-blue-600"}`}>
+                      {zScore.toFixed(2)}
+                    </p>
+                  </div>
 
-                <div>
-                  <label
-                    className={`block text-sm font-semibold mb-2 ${
-                      darkMode ? "text-gray-300" : "text-gray-700"
-                    }`}
-                  >
-                    Expected split A (%)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    className={`w-full px-4 py-3 rounded-xl border-2 font-semibold ${
-                      darkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-gray-50 border-gray-200 text-gray-900"
-                    }`}
-                    value={expectedSplitA}
-                    onChange={(e) => handleExpectedSplitAChange(e.target.value)}
-                  />
-                </div>
+                  <div className={`rounded-xl border p-4 ${darkMode ? "border-slate-800 bg-slate-950/40" : "border-gray-200 bg-gray-50"}`}>
+                    <p className={`${darkMode ? "text-slate-300" : "text-gray-700"} text-xs font-semibold mb-1`}>
+                      🎯 P-Value
+                    </p>
+                    <p className={`text-2xl font-black ${darkMode ? "text-indigo-300" : "text-indigo-600"}`}>
+                      {pValue.toFixed(4)}
+                    </p>
+                  </div>
 
-                <div>
-                  <label
-                    className={`block text-sm font-semibold mb-2 ${
-                      darkMode ? "text-gray-300" : "text-gray-700"
-                    }`}
-                  >
-                    Expected split B (%)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    className={`w-full px-4 py-3 rounded-xl border-2 font-semibold ${
-                      darkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-gray-50 border-gray-200 text-gray-900"
-                    }`}
-                    value={expectedSplitB}
-                    onChange={(e) => handleExpectedSplitBChange(e.target.value)}
-                  />
+                  <div className={`rounded-xl border p-4 ${darkMode ? "border-slate-800 bg-slate-950/40" : "border-gray-200 bg-gray-50"}`}>
+                    <p className={`${darkMode ? "text-slate-300" : "text-gray-700"} text-xs font-semibold mb-1`}>
+                      🏆 Winner
+                    </p>
+                    <p className={`text-2xl font-black ${darkMode ? "text-pink-300" : "text-pink-600"}`}>
+                      {treatmentRate > controlRate ? "B" : controlRate > treatmentRate ? "A" : "Tie"}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <div className={`mt-4 text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
-                <span className="font-semibold">ROI:</span> {roiPct.toFixed(1)}% ·{" "}
-                <span className="font-semibold">Expected loss:</span> €{expectedLossEuro.toFixed(0)} ·{" "}
-                <span className="font-semibold">Power:</span> {(power * 100).toFixed(0)}% ·{" "}
-                <span className="font-semibold">Cost/visitor:</span> €{costPerVisitor.toFixed(4)}
-              </div>
-            </div>
-
-            {/* Results Dashboard */}
-            <div
-              className={`${darkMode ? "bg-gray-800" : "bg-white"} rounded-2xl p-8 shadow-2xl border ${
-                darkMode ? "border-gray-700" : "border-gray-100"
-              }`}
-            >
-              {/* ... дальше файл без изменений ... */}
-              <div className="flex items-center space-x-3 mb-8">
-                <div
-                  className={`w-12 h-12 bg-gradient-to-r ${getConfidenceTone()} rounded-xl flex items-center justify-center`}
-                >
-                  <span className="text-2xl">🎛️</span>
-                </div>
-                <div className="text-left">
-                  <h2 className={`text-3xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
-                    Statistical Results
-                  </h2>
-                  <p className={`${darkMode ? "text-gray-400" : "text-gray-600"}`}>
-                    Policy-driven decision with transparent trace
-                  </p>
-                </div>
-              </div>
-
-              {/* Key Metrics */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div
-                  className={`p-6 rounded-xl ${darkMode ? "bg-gray-700" : "bg-gray-50"} border ${
-                    darkMode ? "border-gray-600" : "border-gray-200"
-                  }`}
-                >
-                  <p className={`text-sm font-medium mb-2 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
-                    📈 Improvement
-                  </p>
-                  <p className={`text-3xl font-black ${improvement >= 0 ? "text-green-500" : "text-red-500"}`}>
-                    {improvement >= 0 ? "+" : ""}
-                    {improvement.toFixed(1)}%
-                  </p>
-                </div>
-
-                <div
-                  className={`p-6 rounded-xl ${darkMode ? "bg-gray-700" : "bg-gray-50"} border ${
-                    darkMode ? "border-gray-600" : "border-gray-200"
-                  }`}
-                >
-                  <p className={`text-sm font-medium mb-2 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
-                    📊 Z-Score
-                  </p>
-                  <p className={`text-3xl font-black ${darkMode ? "text-blue-400" : "text-blue-600"}`}>
-                    {zScore.toFixed(2)}
-                  </p>
-                </div>
-
-                <div
-                  className={`p-6 rounded-xl ${darkMode ? "bg-gray-700" : "bg-gray-50"} border ${
-                    darkMode ? "border-gray-600" : "border-gray-200"
-                  }`}
-                >
-                  <p className={`text-sm font-medium mb-2 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
-                    🎯 P-Value
-                  </p>
-                  <p className={`text-3xl font-black ${darkMode ? "text-indigo-400" : "text-indigo-600"}`}>
-                    {pValue.toFixed(4)}
-                  </p>
-                </div>
-
-                <div
-                  className={`p-6 rounded-xl ${darkMode ? "bg-gray-700" : "bg-gray-50"} border ${
-                    darkMode ? "border-gray-600" : "border-gray-200"
-                  }`}
-                >
-                  <p className={`text-sm font-medium mb-2 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
-                    🏆 Winner
-                  </p>
-                  <p className={`text-2xl font-black ${darkMode ? "text-pink-400" : "text-pink-600"}`}>
-                    {treatmentRate > controlRate ? "B" : controlRate > treatmentRate ? "A" : "Tie"}
-                  </p>
-                </div>
-              </div>
-
-              {/* Policy-driven Banner */}
-              <div className={`p-8 rounded-2xl bg-gradient-to-r ${decisionMeta.tone} text-white`}>
-                <div className="flex items-center space-x-4">
+              {/* Main Decision banner card */}
+              <div className={`rounded-2xl border p-6 shadow-xl ${darkMode ? "border-slate-800" : "border-gray-200"} bg-gradient-to-r ${decisionMeta.tone} text-white`}>
+                <div className="flex items-start gap-4">
                   <div className="text-4xl">🎛️</div>
                   <div className="text-left">
-                    <h3 className="text-2xl font-bold mb-2">{decisionMeta.title}</h3>
-                    <p className="text-lg opacity-90">
+                    <h3 className="text-2xl font-black mb-1">{decisionMeta.title}</h3>
+                    <p className="text-base opacity-90">
                       {decisionMeta.subtitle} Confidence: {(decisionConfidence * 100).toFixed(0)}%
                     </p>
 
-                    {policyError && <p className="mt-3 text-sm opacity-90">⚠️ Policy load error: {policyError}</p>}
-
-                    {!policyDoc && !policyError && (
-                      <p className="mt-3 text-sm opacity-90">⏳ Policy Engine: Loading policies…</p>
-                    )}
+                    {policyError && <p className="mt-3 text-sm opacity-95">⚠️ Policy load error: {policyError}</p>}
+                    {!policyDoc && !policyError && <p className="mt-3 text-sm opacity-95">⏳ Policy Engine: Loading policies…</p>}
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Actions */}
-              <div className="flex flex-col sm:flex-row gap-4 mt-8">
-                <button
-                  onClick={loadSampleData}
-                  disabled={isAnimating}
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isAnimating ? "🔄 Loading..." : "📊 Load Sample Data"}
-                </button>
+            {/* RIGHT: Policies / Trace */}
+            <div className="xl:col-span-3 space-y-6">
+              <div className={cardBase}>
+                <div className="flex items-center justify-between mb-5">
+                  <div className="text-left">
+                    <h3 className="text-xl font-extrabold">Policy Trace</h3>
+                    <p className={`${darkMode ? "text-slate-300" : "text-gray-600"} text-sm`}>
+                      Rules & rationale
+                    </p>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-semibold ${darkMode ? "bg-slate-800 text-slate-200" : "bg-gray-100 text-gray-700"}`}>
+                    Audit
+                  </div>
+                </div>
 
-                <button
-                  onClick={generateRandomData}
-                  disabled={isAnimating}
-                  className="flex-1 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isAnimating ? "🎲 Generating..." : "🎲 Generate Random Test"}
-                </button>
-              </div>
-
-              {/* Policy Panel */}
-              <div className="mt-8">
                 <PolicyDemoPanel
                   pValue={pValue}
                   upliftPct={improvement}
@@ -795,36 +674,18 @@ const ABTestingPro = () => {
         )}
 
         {activeTab === "insights" && (
-          <div
-            className={`${darkMode ? "bg-gray-800" : "bg-white"} rounded-2xl p-8 shadow-2xl border ${
-              darkMode ? "border-gray-700" : "border-gray-100"
-            }`}
-          >
-            <h2 className={`text-3xl font-bold mb-6 ${darkMode ? "text-white" : "text-gray-900"}`}>
-              🧠 AI-Powered Insights
-            </h2>
+          <div className={cardBase}>
+            <h2 className="text-3xl font-bold mb-6">🧠 AI-Powered Insights</h2>
             <div className="grid lg:grid-cols-2 gap-6">
-              <div
-                className={`p-6 rounded-xl ${darkMode ? "bg-gray-700" : "bg-gray-50"} border ${
-                  darkMode ? "border-gray-600" : "border-gray-200"
-                }`}
-              >
-                <h3 className={`text-xl font-bold mb-4 ${darkMode ? "text-white" : "text-gray-900"}`}>
-                  📈 Performance Analysis
-                </h3>
-                <p className={`${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+              <div className={`p-6 rounded-xl border ${darkMode ? "border-slate-800 bg-slate-950/40" : "border-gray-200 bg-gray-50"}`}>
+                <h3 className="text-xl font-bold mb-4">📈 Performance Analysis</h3>
+                <p className={`${darkMode ? "text-slate-200" : "text-gray-700"}`}>
                   Your test shows {Math.abs(improvement).toFixed(1)}% difference between variants.
                 </p>
               </div>
-              <div
-                className={`p-6 rounded-xl ${darkMode ? "bg-gray-700" : "bg-gray-50"} border ${
-                  darkMode ? "border-gray-600" : "border-gray-200"
-                }`}
-              >
-                <h3 className={`text-xl font-bold mb-4 ${darkMode ? "text-white" : "text-gray-900"}`}>
-                  🎯 Recommendations
-                </h3>
-                <p className={`${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+              <div className={`p-6 rounded-xl border ${darkMode ? "border-slate-800 bg-slate-950/40" : "border-gray-200 bg-gray-50"}`}>
+                <h3 className="text-xl font-bold mb-4">🎯 Recommendations</h3>
+                <p className={`${darkMode ? "text-slate-200" : "text-gray-700"}`}>
                   Current policy decision: <b>{decision}</b> (confidence {(decisionConfidence * 100).toFixed(0)}%).
                 </p>
               </div>
@@ -833,20 +694,12 @@ const ABTestingPro = () => {
         )}
 
         {activeTab === "history" && (
-          <div
-            className={`${darkMode ? "bg-gray-800" : "bg-white"} rounded-2xl p-8 shadow-2xl border ${
-              darkMode ? "border-gray-700" : "border-gray-100"
-            }`}
-          >
-            <h2 className={`text-3xl font-bold mb-6 ${darkMode ? "text-white" : "text-gray-900"}`}>
-              📈 Test History
-            </h2>
+          <div className={cardBase}>
+            <h2 className="text-3xl font-bold mb-6">📈 Test History</h2>
             <div className="text-center py-12">
               <div className="text-6xl mb-4">📊</div>
-              <p className={`text-xl ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
-                Test history feature coming soon!
-              </p>
-              <p className={`${darkMode ? "text-gray-500" : "text-gray-500"} mt-2`}>
+              <p className={`text-xl ${darkMode ? "text-slate-300" : "text-gray-600"}`}>Test history feature coming soon!</p>
+              <p className={`${darkMode ? "text-slate-400" : "text-gray-500"} mt-2`}>
                 Track your experiments over time with detailed analytics.
               </p>
             </div>
@@ -855,11 +708,7 @@ const ABTestingPro = () => {
 
         {/* Footer */}
         <footer className="text-center py-12">
-          <div
-            className={`inline-flex items-center space-x-2 px-6 py-3 rounded-full ${
-              darkMode ? "bg-gray-800 text-gray-300" : "bg-white text-gray-600"
-            } shadow-lg`}
-          >
+          <div className={`inline-flex items-center space-x-2 px-6 py-3 rounded-full ${darkMode ? "bg-gray-800 text-gray-300" : "bg-white text-gray-600"} shadow-lg`}>
             <span>⚡</span>
             <span className="font-medium">Powered by Statistical Science</span>
             <span>•</span>

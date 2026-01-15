@@ -43,3 +43,92 @@ describe("evaluatePolicies", () => {
     expect(res.triggeredRules).toEqual([]);
   });
 });
+
+describe("policy precedence (governance overrides)", () => {
+  test("governance ESCALATE overrides IMPLEMENT even if significant positive", () => {
+    const policyDoc = {
+      defaultDecision: "CONTINUE_TEST",
+      defaultConfidence: 0.55,
+      rules: [
+        {
+          id: "GOV_ROI_RED",
+          title: "ROI is negative",
+          severity: "HIGH",
+          priority: 1000,
+          when: 'roi_level == "RED"',
+          then: { decision: "ESCALATE", confidence: 0.85 },
+          reason: "ROI risk",
+        },
+        {
+          id: "POSITIVE_SIGNIFICANT",
+          title: "Significant win",
+          severity: "HIGH",
+          priority: 500,
+          when: "p_value < 0.05 && uplift_pct > 0",
+          then: { decision: "IMPLEMENT_TREATMENT", confidence: 0.9 },
+          reason: "Ship it",
+        },
+      ],
+    };
+
+    const signals = {
+      p_value: 0.01,
+      uplift_pct: 10,
+      roi_level: "RED",
+    };
+
+    const res = evaluatePolicies(policyDoc, signals);
+    expect(res.decision).toBe("ESCALATE");
+    expect(res.triggeredRules?.[0]?.id).toBe("GOV_ROI_RED"); // top rule
+  });
+
+  test("IMPLEMENT allowed only when governance is ok", () => {
+    const policyDoc = {
+      defaultDecision: "CONTINUE_TEST",
+      defaultConfidence: 0.55,
+      rules: [
+        {
+          id: "GOV_SRM_RED",
+          severity: "CRITICAL",
+          priority: 1000,
+          match: { srm_level: "RED" },
+          then: { decision: "ESCALATE", confidence: 0.95 },
+        },
+        {
+          id: "GOV_EXPECTED_LOSS_RED",
+          severity: "HIGH",
+          priority: 950,
+          match: { expected_loss_level: "RED" },
+          then: { decision: "ESCALATE", confidence: 0.85 },
+        },
+        {
+          id: "GOV_ROI_RED",
+          severity: "HIGH",
+          priority: 900,
+          when: 'roi_level == "RED"',
+          then: { decision: "ESCALATE", confidence: 0.85 },
+        },
+        {
+          id: "POSITIVE_SIGNIFICANT",
+          severity: "HIGH",
+          priority: 600,
+          when:
+            'p_value < 0.05 && uplift_pct > 0 && effect_size_level != "RED" && srm_level != "RED" && expected_loss_level != "RED"',
+          then: { decision: "IMPLEMENT_TREATMENT", confidence: 0.9 },
+        },
+      ],
+    };
+
+    const signals = {
+      p_value: 0.01,
+      uplift_pct: 8,
+      effect_size_level: "GREEN",
+      srm_level: "GREEN",
+      expected_loss_level: "YELLOW",
+      roi_level: "GREEN",
+    };
+
+    const res = evaluatePolicies(policyDoc, signals);
+    expect(res.decision).toBe("IMPLEMENT_TREATMENT");
+  });
+});

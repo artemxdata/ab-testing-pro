@@ -1,4 +1,4 @@
-version: "2.2"
+version: "2.3"
 defaultDecision: "CONTINUE_TEST"
 defaultConfidence: 0.55
 
@@ -51,36 +51,35 @@ rules:
       - 'roi_level == "RED"'
 
   # --------------------
-  # Negative significant (only if governance is OK)
+  # Significant negative
   # --------------------
   - id: "NEGATIVE_SIGNIFICANT"
     title: "Treatment B is significantly worse"
     severity: "HIGH"
     priority: 700
-    when: 'p_value < 0.05 && uplift_pct < 0 && srm_level != "RED"'
+    when: "p_value < alpha && uplift_pct < 0"
     then:
       decision: "REJECT_TREATMENT"
       confidence: 0.90
     reason: "Statistically significant negative impact detected. Reject treatment B."
     evidence:
-      - "p_value < 0.05"
+      - "p_value < alpha"
       - "uplift_pct < 0"
-      - 'srm_level != "RED"'
 
   # --------------------
-  # Positive significant -> implement only when governance is OK
+  # Significant positive (ONLY if governance is OK)
   # --------------------
-  - id: "POSITIVE_SIGNIFICANT_IMPLEMENT"
-    title: "Treatment B is significantly better (safe to roll out)"
+  - id: "POSITIVE_SIGNIFICANT_GOV_OK"
+    title: "Treatment B is significantly better (governance ok)"
     severity: "HIGH"
-    priority: 600
-    when: 'p_value < 0.05 && uplift_pct > 0 && effect_size_level != "RED" && srm_level != "RED" && expected_loss_level != "RED" && roi_level != "RED"'
+    priority: 650
+    when: 'p_value < alpha && uplift_pct > 0 && effect_size_level != "RED" && srm_level != "RED" && expected_loss_level != "RED" && roi_level != "RED"'
     then:
       decision: "IMPLEMENT_TREATMENT"
       confidence: 0.90
-    reason: "Significant positive impact with practical effect size and no red governance risks."
+    reason: "Significant positive uplift with practical effect size and no governance red flags."
     evidence:
-      - "p_value < 0.05"
+      - "p_value < alpha"
       - "uplift_pct > 0"
       - 'effect_size_level != "RED"'
       - 'srm_level != "RED"'
@@ -94,26 +93,11 @@ rules:
     title: "Not statistically significant yet"
     severity: "MEDIUM"
     priority: 100
-    when: "p_value >= 0.05"
+    when: "p_value >= alpha"
     then:
       decision: "CONTINUE_TEST"
       confidence: 0.70
     reason: "Not statistically significant yet. Continue the test or increase sample size."
     evidence:
-      - "p_value >= 0.05"
-
-  # Optional: promising but underpowered (keeps CONTINUE but gives more helpful reason)
-  - id: "PROMISING_BUT_UNDERPOWERED"
-    title: "Positive trend but low power"
-    severity: "LOW"
-    priority: 110
-    when: 'p_value >= 0.05 && uplift_pct > 0 && power_level == "RED"'
-    then:
-      decision: "CONTINUE_TEST"
-      confidence: 0.65
-    reason: "Positive trend, but power is low. Increase sample size before deciding."
-    evidence:
-      - "p_value >= 0.05"
-      - "uplift_pct > 0"
-      - 'power_level == "RED"'
+      - "p_value >= alpha"
 

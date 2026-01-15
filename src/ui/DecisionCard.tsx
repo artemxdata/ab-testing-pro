@@ -9,15 +9,31 @@ const pillByDecision = (decision: string) => {
   const d = String(decision || "").toUpperCase();
 
   if (["IMPLEMENT", "LAUNCH", "ACCEPT", "ROLLOUT", "SHIP"].some((k) => d.includes(k))) {
-    return { emoji: "🚀", label: "IMPLEMENT", className: "bg-green-100 text-green-800 border-green-200" };
+    return {
+      emoji: "🚀",
+      label: "IMPLEMENT",
+      className: "bg-green-100 text-green-800 border-green-200",
+    };
   }
   if (["REJECT", "STOP"].some((k) => d.includes(k))) {
-    return { emoji: "⛔", label: "REJECT", className: "bg-red-100 text-red-800 border-red-200" };
+    return {
+      emoji: "⛔",
+      label: "REJECT",
+      className: "bg-red-100 text-red-800 border-red-200",
+    };
   }
   if (d.includes("ESCALATE")) {
-    return { emoji: "⚠️", label: "ESCALATE", className: "bg-yellow-100 text-yellow-800 border-yellow-200" };
+    return {
+      emoji: "⚠️",
+      label: "ESCALATE",
+      className: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    };
   }
-  return { emoji: "⏳", label: "CONTINUE", className: "bg-gray-100 text-gray-800 border-gray-200" };
+  return {
+    emoji: "⏳",
+    label: "CONTINUE",
+    className: "bg-gray-100 text-gray-800 border-gray-200",
+  };
 };
 
 function DecisionCard({ decision, confidence }: Props) {
@@ -28,12 +44,7 @@ function DecisionCard({ decision, confidence }: Props) {
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="text-2xl">{pill.emoji}</div>
-          <div>
-            <div className="font-semibold">Decision</div>
-            <div className="text-sm text-gray-600">
-              Decision is produced by YAML policies (deterministic engine)
-            </div>
-          </div>
+          <div className="font-semibold text-sm">Policy Decision</div>
         </div>
 
         <span className={`px-3 py-1 rounded-full border text-xs font-bold ${pill.className}`}>
@@ -41,13 +52,9 @@ function DecisionCard({ decision, confidence }: Props) {
         </span>
       </div>
 
-      <div className="mt-3 text-sm">
-        <div>
-          <span className="font-semibold">Decision:</span> {decision}
-        </div>
-        <div>
-          <span className="font-semibold">Confidence:</span> {(Number(confidence || 0) * 100).toFixed(0)}%
-        </div>
+      <div className="mt-3 text-sm text-gray-700">
+        <span className="font-semibold">Confidence:</span>{" "}
+        {(Number(confidence || 0) * 100).toFixed(0)}%
       </div>
     </div>
   );
@@ -55,3 +62,4 @@ function DecisionCard({ decision, confidence }: Props) {
 
 export default DecisionCard;
 export { DecisionCard };
+
