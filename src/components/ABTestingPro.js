@@ -293,6 +293,60 @@ const ABTestingPro = () => {
     }, 500);
   };
 
+  // ---- presets (inserted next to loadSampleData / generateRandomData) ----
+  const presets = {
+    cleanWin: {
+      name: "✅ Clean Win (Implement)",
+      controlVisitors: 20000,
+      controlConversions: 900,
+      treatmentVisitors: 20000,
+      treatmentConversions: 1030,
+      revenuePerConversion: 50,
+      testCost: 500,
+      riskPenaltyPct: 15,
+    },
+    significantLoss: {
+      name: "❌ Significant Loss (Reject)",
+      controlVisitors: 20000,
+      controlConversions: 900,
+      treatmentVisitors: 20000,
+      treatmentConversions: 780,
+      revenuePerConversion: 50,
+      testCost: 500,
+      riskPenaltyPct: 15,
+    },
+    srmBroken: {
+      name: "🧯 SRM Broken (Escalate)",
+      controlVisitors: 20000,
+      controlConversions: 900,
+      treatmentVisitors: 60000,
+      treatmentConversions: 2700,
+      revenuePerConversion: 50,
+      testCost: 500,
+      riskPenaltyPct: 15,
+    },
+    riskyEconomics: {
+      name: "⚠️ Risky Economics (Escalate)",
+      controlVisitors: 20000,
+      controlConversions: 900,
+      treatmentVisitors: 20000,
+      treatmentConversions: 950,
+      revenuePerConversion: 10,
+      testCost: 5000,
+      riskPenaltyPct: 30,
+    },
+  };
+
+  function applyPreset(p) {
+    setControlVisitors(p.controlVisitors);
+    setControlConversions(p.controlConversions);
+    setTreatmentVisitors(p.treatmentVisitors);
+    setTreatmentConversions(p.treatmentConversions);
+    setRevenuePerConversion(p.revenuePerConversion);
+    setTestCost(p.testCost);
+    setRiskPenaltyPct(p.riskPenaltyPct);
+  }
+
   // ---------- UI helpers ----------
 
   const cardBase = `rounded-2xl border p-6 shadow-xl ${
@@ -300,7 +354,11 @@ const ABTestingPro = () => {
   }`;
 
   return (
-    <div className={`min-h-screen transition-all duration-300 ${darkMode ? "bg-gray-900" : "bg-gradient-to-br from-indigo-50 via-white to-cyan-50"}`}>
+    <div
+      className={`min-h-screen transition-all duration-300 ${
+        darkMode ? "bg-gray-900" : "bg-gradient-to-br from-indigo-50 via-white to-cyan-50"
+      }`}
+    >
       <div className="relative z-10 container mx-auto px-4 max-w-6xl">
         {/* Header */}
         <header className="text-center py-10">
@@ -375,16 +433,12 @@ const ABTestingPro = () => {
                         <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-blue-600 text-white font-bold">A</span>
                         <span className="font-semibold">Control</span>
                       </div>
-                      <span className={`${darkMode ? "text-slate-300" : "text-gray-600"} text-sm`}>
-                        {controlRate.toFixed(2)}%
-                      </span>
+                      <span className={`${darkMode ? "text-slate-300" : "text-gray-600"} text-sm`}>{controlRate.toFixed(2)}%</span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className={`block text-xs font-semibold mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>
-                          Visitors
-                        </label>
+                        <label className={`block text-xs font-semibold mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>Visitors</label>
                         <input
                           type="number"
                           className={`w-full px-3 py-2 rounded-xl border font-semibold ${
@@ -395,9 +449,7 @@ const ABTestingPro = () => {
                         />
                       </div>
                       <div>
-                        <label className={`block text-xs font-semibold mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>
-                          Conversions
-                        </label>
+                        <label className={`block text-xs font-semibold mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>Conversions</label>
                         <input
                           type="number"
                           className={`w-full px-3 py-2 rounded-xl border font-semibold ${
@@ -417,16 +469,12 @@ const ABTestingPro = () => {
                         <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-600 text-white font-bold">B</span>
                         <span className="font-semibold">Treatment</span>
                       </div>
-                      <span className={`${darkMode ? "text-slate-300" : "text-gray-600"} text-sm`}>
-                        {treatmentRate.toFixed(2)}%
-                      </span>
+                      <span className={`${darkMode ? "text-slate-300" : "text-gray-600"} text-sm`}>{treatmentRate.toFixed(2)}%</span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className={`block text-xs font-semibold mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>
-                          Visitors
-                        </label>
+                        <label className={`block text-xs font-semibold mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>Visitors</label>
                         <input
                           type="number"
                           className={`w-full px-3 py-2 rounded-xl border font-semibold ${
@@ -437,9 +485,7 @@ const ABTestingPro = () => {
                         />
                       </div>
                       <div>
-                        <label className={`block text-xs font-semibold mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>
-                          Conversions
-                        </label>
+                        <label className={`block text-xs font-semibold mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>Conversions</label>
                         <input
                           type="number"
                           className={`w-full px-3 py-2 rounded-xl border font-semibold ${
@@ -470,6 +516,19 @@ const ABTestingPro = () => {
                       {isAnimating ? "🎲 Generating..." : "🎲 Random Test"}
                     </button>
                   </div>
+
+                  {/* Preset buttons row (inserted рядом с Actions) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+                    {Object.values(presets).map((p) => (
+                      <button
+                        key={p.name}
+                        onClick={() => applyPreset(p)}
+                        className="px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm font-semibold text-gray-800 dark:text-gray-100"
+                      >
+                        {p.name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -487,9 +546,7 @@ const ABTestingPro = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className={`block text-xs font-semibold mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>
-                      Revenue / conversion (€)
-                    </label>
+                    <label className={`block text-xs font-semibold mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>Revenue / conversion (€)</label>
                     <input
                       type="number"
                       className={`w-full px-3 py-2 rounded-xl border font-semibold ${
@@ -501,9 +558,7 @@ const ABTestingPro = () => {
                   </div>
 
                   <div>
-                    <label className={`block text-xs font-semibold mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>
-                      Test cost (€)
-                    </label>
+                    <label className={`block text-xs font-semibold mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>Test cost (€)</label>
                     <input
                       type="number"
                       className={`w-full px-3 py-2 rounded-xl border font-semibold ${
@@ -515,9 +570,7 @@ const ABTestingPro = () => {
                   </div>
 
                   <div>
-                    <label className={`block text-xs font-semibold mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>
-                      Risk penalty (%)
-                    </label>
+                    <label className={`block text-xs font-semibold mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>Risk penalty (%)</label>
                     <input
                       type="number"
                       className={`w-full px-3 py-2 rounded-xl border font-semibold ${
@@ -529,9 +582,7 @@ const ABTestingPro = () => {
                   </div>
 
                   <div>
-                    <label className={`block text-xs font-semibold mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>
-                      Expected split A (%)
-                    </label>
+                    <label className={`block text-xs font-semibold mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>Expected split A (%)</label>
                     <input
                       type="number"
                       min="0"
@@ -545,9 +596,7 @@ const ABTestingPro = () => {
                   </div>
 
                   <div>
-                    <label className={`block text-xs font-semibold mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>
-                      Expected split B (%)
-                    </label>
+                    <label className={`block text-xs font-semibold mb-1 ${darkMode ? "text-slate-300" : "text-gray-700"}`}>Expected split B (%)</label>
                     <input
                       type="number"
                       min="0"
@@ -579,20 +628,14 @@ const ABTestingPro = () => {
                 <div className="flex items-center justify-between mb-5">
                   <div className="text-left">
                     <h2 className="text-xl font-extrabold">Statistical Results</h2>
-                    <p className={`${darkMode ? "text-slate-300" : "text-gray-600"} text-sm`}>
-                      Key metrics snapshot
-                    </p>
+                    <p className={`${darkMode ? "text-slate-300" : "text-gray-600"} text-sm`}>Key metrics snapshot</p>
                   </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-semibold ${darkMode ? "bg-slate-800 text-slate-200" : "bg-gray-100 text-gray-700"}`}>
-                    Live
-                  </div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-semibold ${darkMode ? "bg-slate-800 text-slate-200" : "bg-gray-100 text-gray-700"}`}>Live</div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className={`rounded-xl border p-4 ${darkMode ? "border-slate-800 bg-slate-950/40" : "border-gray-200 bg-gray-50"}`}>
-                    <p className={`${darkMode ? "text-slate-300" : "text-gray-700"} text-xs font-semibold mb-1`}>
-                      📈 Improvement
-                    </p>
+                    <p className={`${darkMode ? "text-slate-300" : "text-gray-700"} text-xs font-semibold mb-1`}>📈 Improvement</p>
                     <p className={`text-2xl font-black ${improvement >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
                       {improvement >= 0 ? "+" : ""}
                       {improvement.toFixed(1)}%
@@ -600,27 +643,17 @@ const ABTestingPro = () => {
                   </div>
 
                   <div className={`rounded-xl border p-4 ${darkMode ? "border-slate-800 bg-slate-950/40" : "border-gray-200 bg-gray-50"}`}>
-                    <p className={`${darkMode ? "text-slate-300" : "text-gray-700"} text-xs font-semibold mb-1`}>
-                      📊 Z-Score
-                    </p>
-                    <p className={`text-2xl font-black ${darkMode ? "text-sky-300" : "text-blue-600"}`}>
-                      {zScore.toFixed(2)}
-                    </p>
+                    <p className={`${darkMode ? "text-slate-300" : "text-gray-700"} text-xs font-semibold mb-1`}>📊 Z-Score</p>
+                    <p className={`text-2xl font-black ${darkMode ? "text-sky-300" : "text-blue-600"}`}>{zScore.toFixed(2)}</p>
                   </div>
 
                   <div className={`rounded-xl border p-4 ${darkMode ? "border-slate-800 bg-slate-950/40" : "border-gray-200 bg-gray-50"}`}>
-                    <p className={`${darkMode ? "text-slate-300" : "text-gray-700"} text-xs font-semibold mb-1`}>
-                      🎯 P-Value
-                    </p>
-                    <p className={`text-2xl font-black ${darkMode ? "text-indigo-300" : "text-indigo-600"}`}>
-                      {pValue.toFixed(4)}
-                    </p>
+                    <p className={`${darkMode ? "text-slate-300" : "text-gray-700"} text-xs font-semibold mb-1`}>🎯 P-Value</p>
+                    <p className={`text-2xl font-black ${darkMode ? "text-indigo-300" : "text-indigo-600"}`}>{pValue.toFixed(4)}</p>
                   </div>
 
                   <div className={`rounded-xl border p-4 ${darkMode ? "border-slate-800 bg-slate-950/40" : "border-gray-200 bg-gray-50"}`}>
-                    <p className={`${darkMode ? "text-slate-300" : "text-gray-700"} text-xs font-semibold mb-1`}>
-                      🏆 Winner
-                    </p>
+                    <p className={`${darkMode ? "text-slate-300" : "text-gray-700"} text-xs font-semibold mb-1`}>🏆 Winner</p>
                     <p className={`text-2xl font-black ${darkMode ? "text-pink-300" : "text-pink-600"}`}>
                       {treatmentRate > controlRate ? "B" : controlRate > treatmentRate ? "A" : "Tie"}
                     </p>
@@ -651,13 +684,9 @@ const ABTestingPro = () => {
                 <div className="flex items-center justify-between mb-5">
                   <div className="text-left">
                     <h3 className="text-xl font-extrabold">Policy Trace</h3>
-                    <p className={`${darkMode ? "text-slate-300" : "text-gray-600"} text-sm`}>
-                      Rules & rationale
-                    </p>
+                    <p className={`${darkMode ? "text-slate-300" : "text-gray-600"} text-sm`}>Rules & rationale</p>
                   </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-semibold ${darkMode ? "bg-slate-800 text-slate-200" : "bg-gray-100 text-gray-700"}`}>
-                    Audit
-                  </div>
+                  <div className={`px-3 py-1 rounded-full text-xs font-semibold ${darkMode ? "bg-slate-800 text-slate-200" : "bg-gray-100 text-gray-700"}`}>Audit</div>
                 </div>
 
                 <PolicyDemoPanel
@@ -679,9 +708,7 @@ const ABTestingPro = () => {
             <div className="grid lg:grid-cols-2 gap-6">
               <div className={`p-6 rounded-xl border ${darkMode ? "border-slate-800 bg-slate-950/40" : "border-gray-200 bg-gray-50"}`}>
                 <h3 className="text-xl font-bold mb-4">📈 Performance Analysis</h3>
-                <p className={`${darkMode ? "text-slate-200" : "text-gray-700"}`}>
-                  Your test shows {Math.abs(improvement).toFixed(1)}% difference between variants.
-                </p>
+                <p className={`${darkMode ? "text-slate-200" : "text-gray-700"}`}>Your test shows {Math.abs(improvement).toFixed(1)}% difference between variants.</p>
               </div>
               <div className={`p-6 rounded-xl border ${darkMode ? "border-slate-800 bg-slate-950/40" : "border-gray-200 bg-gray-50"}`}>
                 <h3 className="text-xl font-bold mb-4">🎯 Recommendations</h3>
@@ -699,9 +726,7 @@ const ABTestingPro = () => {
             <div className="text-center py-12">
               <div className="text-6xl mb-4">📊</div>
               <p className={`text-xl ${darkMode ? "text-slate-300" : "text-gray-600"}`}>Test history feature coming soon!</p>
-              <p className={`${darkMode ? "text-slate-400" : "text-gray-500"} mt-2`}>
-                Track your experiments over time with detailed analytics.
-              </p>
+              <p className={`${darkMode ? "text-slate-400" : "text-gray-500"} mt-2`}>Track your experiments over time with detailed analytics.</p>
             </div>
           </div>
         )}
