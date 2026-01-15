@@ -1,16 +1,16 @@
-version: "2.0"
+version: "2.2"
 defaultDecision: "CONTINUE_TEST"
-defaultConfidence: 0.70
+defaultConfidence: 0.55
 
-# Decision precedence:
-# 1) SRM / governance always wins (ESCALATE)
-# 2) If statistically significant negative → REJECT
-# 3) If statistically significant positive AND good effect size → IMPLEMENT
-# 4) Else → CONTINUE
+# Precedence (enforced by priority):
+# 1) Governance (SRM, expected loss, ROI) -> ESCALATE
+# 2) Significant negative -> REJECT_TREATMENT
+# 3) Significant positive + practical effect + governance ok -> IMPLEMENT_TREATMENT
+# 4) Otherwise -> CONTINUE_TEST
 
 rules:
   # --------------------
-  # Governance / quality
+  # Governance / Quality (must override everything)
   # --------------------
   - id: "GOV_SRM_RED"
     title: "Sample Ratio Mismatch detected"
@@ -21,82 +21,99 @@ rules:
     then:
       decision: "ESCALATE"
       confidence: 0.95
-    reason: "Traffic split is likely broken (SRM). Results are not trustworthy until assignment/instrumentation is fixed."
+    reason: "Traffic split/assignment likely broken. Results are not trustworthy until instrumentation is fixed."
     evidence:
-      - "SRM signal is RED"
+      - "srm_level == RED"
 
-  - id: "GOV_SRM_YELLOW"
-    title: "SRM suspicious (needs review)"
+  - id: "GOV_EXPECTED_LOSS_RED"
+    title: "Expected loss too high"
     severity: "HIGH"
-    priority: 900
+    priority: 950
     match:
-      srm_level: "YELLOW"
+      expected_loss_level: "RED"
     then:
       decision: "ESCALATE"
       confidence: 0.85
-    reason: "SRM is suspicious. Validate assignment and tracking before making rollout decisions."
+    reason: "Downside risk is high. Validate assumptions, run longer, or segment before rollout."
     evidence:
-      - "SRM signal is YELLOW"
+      - "expected_loss_level == RED"
+
+  - id: "GOV_ROI_RED"
+    title: "ROI is negative"
+    severity: "HIGH"
+    priority: 940
+    when: 'roi_level == "RED"'
+    then:
+      decision: "ESCALATE"
+      confidence: 0.85
+    reason: "ROI is negative. Double-check assumptions, costs, and segment results before rollout."
+    evidence:
+      - 'roi_level == "RED"'
 
   # --------------------
-  # Negative impact
+  # Negative significant (only if governance is OK)
   # --------------------
   - id: "NEGATIVE_SIGNIFICANT"
     title: "Treatment B is significantly worse"
     severity: "HIGH"
-    priority: 800
-    when: 'p_value_level == "GREEN" && uplift_pct < 0'
+    priority: 700
+    when: 'p_value < 0.05 && uplift_pct < 0 && srm_level != "RED"'
     then:
       decision: "REJECT_TREATMENT"
       confidence: 0.90
     reason: "Statistically significant negative impact detected. Reject treatment B."
     evidence:
-      - "p-value < 0.05"
+      - "p_value < 0.05"
       - "uplift_pct < 0"
+      - 'srm_level != "RED"'
 
   # --------------------
-  # Positive impact
+  # Positive significant -> implement only when governance is OK
   # --------------------
-  - id: "POSITIVE_SIGNIFICANT_STRONG"
-    title: "Treatment B is significantly better (strong)"
+  - id: "POSITIVE_SIGNIFICANT_IMPLEMENT"
+    title: "Treatment B is significantly better (safe to roll out)"
     severity: "HIGH"
-    priority: 700
-    when: 'p_value_level == "GREEN" && uplift_pct >= 0 && effect_size_level == "GREEN"'
+    priority: 600
+    when: 'p_value < 0.05 && uplift_pct > 0 && effect_size_level != "RED" && srm_level != "RED" && expected_loss_level != "RED" && roi_level != "RED"'
     then:
       decision: "IMPLEMENT_TREATMENT"
       confidence: 0.90
-    reason: "Strong statistically significant improvement with meaningful effect size."
+    reason: "Significant positive impact with practical effect size and no red governance risks."
     evidence:
-      - "p-value < 0.05"
-      - "uplift_pct >= 0"
-      - "effect size is GREEN"
-
-  - id: "POSITIVE_SIGNIFICANT_WEAK"
-    title: "Treatment B is better but effect size is borderline"
-    severity: "MEDIUM"
-    priority: 650
-    when: 'p_value_level == "GREEN" && uplift_pct >= 0 && effect_size_level != "GREEN"'
-    then:
-      decision: "CONTINUE_TEST"
-      confidence: 0.75
-    reason: "Significant, but effect size is not strong enough. Consider running longer / segment analysis."
-    evidence:
-      - "p-value < 0.05"
-      - "effect size is not GREEN"
+      - "p_value < 0.05"
+      - "uplift_pct > 0"
+      - 'effect_size_level != "RED"'
+      - 'srm_level != "RED"'
+      - 'expected_loss_level != "RED"'
+      - 'roi_level != "RED"'
 
   # --------------------
-  # Not significant yet
+  # Not significant -> continue
   # --------------------
   - id: "NOT_SIGNIFICANT"
     title: "Not statistically significant yet"
     severity: "MEDIUM"
     priority: 100
-    match:
-      p_value_level: "RED"
+    when: "p_value >= 0.05"
     then:
       decision: "CONTINUE_TEST"
       confidence: 0.70
     reason: "Not statistically significant yet. Continue the test or increase sample size."
     evidence:
-      - "p-value >= 0.05"
+      - "p_value >= 0.05"
+
+  # Optional: promising but underpowered (keeps CONTINUE but gives more helpful reason)
+  - id: "PROMISING_BUT_UNDERPOWERED"
+    title: "Positive trend but low power"
+    severity: "LOW"
+    priority: 110
+    when: 'p_value >= 0.05 && uplift_pct > 0 && power_level == "RED"'
+    then:
+      decision: "CONTINUE_TEST"
+      confidence: 0.65
+    reason: "Positive trend, but power is low. Increase sample size before deciding."
+    evidence:
+      - "p_value >= 0.05"
+      - "uplift_pct > 0"
+      - 'power_level == "RED"'
 

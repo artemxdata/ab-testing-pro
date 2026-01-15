@@ -12,6 +12,15 @@ const ABTestingPro = () => {
   const [treatmentVisitors, setTreatmentVisitors] = useState(1000);
   const [treatmentConversions, setTreatmentConversions] = useState(58);
 
+  // --- Business inputs (MVP) ---
+  const [revenuePerConversion, setRevenuePerConversion] = useState(50); // €
+  const [testCost, setTestCost] = useState(200); // €
+  const [riskPenaltyPct, setRiskPenaltyPct] = useState(20); // % penalty for uncertainty
+
+  // Expected traffic split (%) with auto-normalization (A + B = 100)
+  const [expectedSplitA, setExpectedSplitA] = useState(50); // %
+  const [expectedSplitB, setExpectedSplitB] = useState(50); // %
+
   const [isAnimating, setIsAnimating] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [activeTab, setActiveTab] = useState("calculator");
@@ -25,6 +34,26 @@ const ABTestingPro = () => {
     const n = Number(v);
     if (!Number.isFinite(n)) return 0;
     return Math.max(0, Math.floor(n));
+  };
+
+  const clampPct = (v) => {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return 0;
+    return Math.max(0, Math.min(100, n));
+  };
+
+  const handleExpectedSplitAChange = (v) => {
+    const a = clampPct(v);
+    const b = 100 - a;
+    setExpectedSplitA(a);
+    setExpectedSplitB(b);
+  };
+
+  const handleExpectedSplitBChange = (v) => {
+    const b = clampPct(v);
+    const a = 100 - b;
+    setExpectedSplitB(b);
+    setExpectedSplitA(a);
   };
 
   const calculateConversionRate = (conversions, visitors) => {
@@ -87,14 +116,66 @@ const ABTestingPro = () => {
     const raw = zScore === 0 ? 1 : 2 * (1 - normalCdf(Math.abs(zScore)));
     const bounded = Math.max(0, Math.min(1, raw));
 
-    // на всякий случай — если вдруг получилось NaN
     if (!Number.isFinite(bounded)) return 1;
     return bounded;
   }, [zScore]);
 
+  // --- Derived business metrics (MVP) ---
+  const upliftRate = useMemo(() => {
+    const p1 = controlVisitors > 0 ? controlConversions / controlVisitors : 0;
+    const p2 = treatmentVisitors > 0 ? treatmentConversions / treatmentVisitors : 0;
+    return p2 - p1; // absolute uplift (rate)
+  }, [controlVisitors, controlConversions, treatmentVisitors, treatmentConversions]);
+
+  // incremental conversions estimate for same traffic as treatment group
+  const incrementalConversions = useMemo(() => {
+    return treatmentVisitors * upliftRate;
+  }, [treatmentVisitors, upliftRate]);
+
+  const incrementalRevenue = useMemo(() => {
+    return incrementalConversions * Number(revenuePerConversion || 0);
+  }, [incrementalConversions, revenuePerConversion]);
+
+  // Cost per visitor (MVP): distribute testCost across total test traffic
+  const costPerVisitor = useMemo(() => {
+    const total = Math.max(1, controlVisitors + treatmentVisitors);
+    const cost = Number(testCost || 0);
+    return cost / total;
+  }, [testCost, controlVisitors, treatmentVisitors]);
+
+  const roiPct = useMemo(() => {
+    const cost = Number(testCost || 0);
+    if (cost <= 0) return 0;
+    return ((incrementalRevenue - cost) / cost) * 100;
+  }, [incrementalRevenue, testCost]);
+
+  // Expected loss proxy in EUR
+  const expectedLossEuro = useMemo(() => {
+    const base = Math.abs(incrementalRevenue);
+    if (!Number.isFinite(base) || base <= 0) return 0;
+    const penalty = Number(riskPenaltyPct || 0) / 100;
+
+    const uncertainty = Math.min(1, Math.max(0, pValue)); // 0..1
+    return base * penalty * uncertainty; // €
+  }, [incrementalRevenue, riskPenaltyPct, pValue]);
+
+  // Expected loss normalized rate (share of test cost) for policy thresholds
+  const expectedLossRate = useMemo(() => {
+    const cost = Number(testCost || 0);
+    if (cost <= 0) return 0;
+    return Number(expectedLossEuro || 0) / cost; // fraction of test cost
+  }, [expectedLossEuro, testCost]);
+
+  // Power approx (very rough): map |z| to [0..1]
+  const power = useMemo(() => {
+    const z = Math.abs(zScore);
+    if (!Number.isFinite(z)) return 0;
+    const v = 1 - Math.exp(-0.5 * z * z);
+    return Math.max(0, Math.min(1, v));
+  }, [zScore]);
+
   // ---------- dark mode (optional) ----------
   useEffect(() => {
-    // Если Tailwind dark:class используешь — оставь
     if (darkMode) document.documentElement.classList.add("dark");
     else document.documentElement.classList.remove("dark");
   }, [darkMode]);
@@ -119,18 +200,44 @@ const ABTestingPro = () => {
   }, []);
 
   // ---------- build signals + evaluate policies ----------
-  // (минимально) алиас, чтобы использовать buildSignalsFn как в твоём варианте
   const buildSignalsFn = buildSignals;
 
   const signals = useMemo(() => {
-    console.log("SRM inputs:", { controlVisitors, treatmentVisitors, types: [typeof controlVisitors, typeof treatmentVisitors] });
     return buildSignalsFn({
       p_value: pValue,
       uplift_pct: improvement,
       n_control: controlVisitors,
       n_treatment: treatmentVisitors,
+
+      // expected split as % (0..100)
+      expected_split_a: Number(expectedSplitA || 50),
+      expected_split_b: Number(expectedSplitB || 50),
+
+      // бизнес
+      revenue_per_conversion: Number(revenuePerConversion || 0),
+      cost_per_visitor: Number(costPerVisitor || 0),
+      roi_pct: Number(roiPct || 0),
+
+      // expected loss в "rate" (0..1), не евро:
+      expected_loss: Number(expectedLossRate || 0),
+
+      power: Number(power || 0),
+      alpha: 0.05,
     });
-  }, [buildSignalsFn, pValue, improvement, controlVisitors, treatmentVisitors]);
+  }, [
+    buildSignalsFn,
+    pValue,
+    improvement,
+    controlVisitors,
+    treatmentVisitors,
+    expectedSplitA,
+    expectedSplitB,
+    revenuePerConversion,
+    costPerVisitor,
+    roiPct,
+    expectedLossRate,
+    power,
+  ]);
 
   const policyResult = useMemo(() => {
     if (!policyDoc) return null;
@@ -204,8 +311,6 @@ const ABTestingPro = () => {
 
   // ---------- UI helpers ----------
   const getConfidenceTone = () => {
-    // Тон карточек можно потом поменять на нормальный дизайн.
-    // Сейчас привязываем к decision.
     return decisionMeta.tone;
   };
 
@@ -338,9 +443,15 @@ const ABTestingPro = () => {
                   </div>
 
                   <div
-                    className={`p-6 rounded-xl ${darkMode ? "bg-blue-900/30" : "bg-blue-50"} border-2 border-blue-200`}
+                    className={`p-6 rounded-xl ${
+                      darkMode ? "bg-blue-900/30" : "bg-blue-50"
+                    } border-2 border-blue-200`}
                   >
-                    <p className={`text-sm font-medium mb-2 ${darkMode ? "text-blue-300" : "text-blue-700"}`}>
+                    <p
+                      className={`text-sm font-medium mb-2 ${
+                        darkMode ? "text-blue-300" : "text-blue-700"
+                      }`}
+                    >
                       Conversion Rate
                     </p>
                     <p
@@ -414,9 +525,15 @@ const ABTestingPro = () => {
                   </div>
 
                   <div
-                    className={`p-6 rounded-xl ${darkMode ? "bg-green-900/30" : "bg-green-50"} border-2 border-green-200`}
+                    className={`p-6 rounded-xl ${
+                      darkMode ? "bg-green-900/30" : "bg-green-50"
+                    } border-2 border-green-200`}
                   >
-                    <p className={`text-sm font-medium mb-2 ${darkMode ? "text-green-300" : "text-green-700"}`}>
+                    <p
+                      className={`text-sm font-medium mb-2 ${
+                        darkMode ? "text-green-300" : "text-green-700"
+                      }`}
+                    >
                       Conversion Rate
                     </p>
                     <p
@@ -431,12 +548,127 @@ const ABTestingPro = () => {
               </div>
             </div>
 
-            {/* Results */}
+            {/* Business Inputs (MVP) - placed before Results Dashboard */}
+            <div
+              className={`${darkMode ? "bg-gray-800" : "bg-white"} rounded-2xl p-6 shadow-2xl border ${
+                darkMode ? "border-gray-700" : "border-gray-100"
+              }`}
+            >
+              <h3 className={`text-xl font-bold mb-4 ${darkMode ? "text-white" : "text-gray-900"}`}>
+                💰 Business Inputs (MVP)
+              </h3>
+
+              <div className="grid md:grid-cols-5 gap-4">
+                <div>
+                  <label
+                    className={`block text-sm font-semibold mb-2 ${
+                      darkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
+                    Revenue per conversion (€)
+                  </label>
+                  <input
+                    type="number"
+                    className={`w-full px-4 py-3 rounded-xl border-2 font-semibold ${
+                      darkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-gray-50 border-gray-200 text-gray-900"
+                    }`}
+                    value={revenuePerConversion}
+                    onChange={(e) => setRevenuePerConversion(Number(e.target.value))}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    className={`block text-sm font-semibold mb-2 ${
+                      darkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
+                    Test cost (€)
+                  </label>
+                  <input
+                    type="number"
+                    className={`w-full px-4 py-3 rounded-xl border-2 font-semibold ${
+                      darkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-gray-50 border-gray-200 text-gray-900"
+                    }`}
+                    value={testCost}
+                    onChange={(e) => setTestCost(Number(e.target.value))}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    className={`block text-sm font-semibold mb-2 ${
+                      darkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
+                    Risk penalty (%)
+                  </label>
+                  <input
+                    type="number"
+                    className={`w-full px-4 py-3 rounded-xl border-2 font-semibold ${
+                      darkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-gray-50 border-gray-200 text-gray-900"
+                    }`}
+                    value={riskPenaltyPct}
+                    onChange={(e) => setRiskPenaltyPct(Number(e.target.value))}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    className={`block text-sm font-semibold mb-2 ${
+                      darkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
+                    Expected split A (%)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    className={`w-full px-4 py-3 rounded-xl border-2 font-semibold ${
+                      darkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-gray-50 border-gray-200 text-gray-900"
+                    }`}
+                    value={expectedSplitA}
+                    onChange={(e) => handleExpectedSplitAChange(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    className={`block text-sm font-semibold mb-2 ${
+                      darkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
+                    Expected split B (%)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    className={`w-full px-4 py-3 rounded-xl border-2 font-semibold ${
+                      darkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-gray-50 border-gray-200 text-gray-900"
+                    }`}
+                    value={expectedSplitB}
+                    onChange={(e) => handleExpectedSplitBChange(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className={`mt-4 text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                <span className="font-semibold">ROI:</span> {roiPct.toFixed(1)}% ·{" "}
+                <span className="font-semibold">Expected loss:</span> €{expectedLossEuro.toFixed(0)} ·{" "}
+                <span className="font-semibold">Power:</span> {(power * 100).toFixed(0)}% ·{" "}
+                <span className="font-semibold">Cost/visitor:</span> €{costPerVisitor.toFixed(4)}
+              </div>
+            </div>
+
+            {/* Results Dashboard */}
             <div
               className={`${darkMode ? "bg-gray-800" : "bg-white"} rounded-2xl p-8 shadow-2xl border ${
                 darkMode ? "border-gray-700" : "border-gray-100"
               }`}
             >
+              {/* ... дальше файл без изменений ... */}
               <div className="flex items-center space-x-3 mb-8">
                 <div
                   className={`w-12 h-12 bg-gradient-to-r ${getConfidenceTone()} rounded-xl flex items-center justify-center`}
@@ -550,13 +782,13 @@ const ABTestingPro = () => {
               {/* Policy Panel */}
               <div className="mt-8">
                 <PolicyDemoPanel
-                pValue={pValue}
-                upliftPct={improvement}
-                signals={signals}
-                policyResult={policyResult}
-                policyError={policyError}
-                policyDocLoaded={!!policyDoc}
-              />
+                  pValue={pValue}
+                  upliftPct={improvement}
+                  signals={signals}
+                  policyResult={policyResult}
+                  policyError={policyError}
+                  policyDocLoaded={!!policyDoc}
+                />
               </div>
             </div>
           </div>
