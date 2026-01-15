@@ -6,27 +6,13 @@ import {
   DecisionHero,
   GovernancePanel,
   StatsStrip,
+  InputField,
+  PanelCard,
 } from "../ui";
 
 import { evaluatePolicies } from "../policy";
 import { usePolicies } from "../policy";
 import { buildSignals } from "../core";
-
-const Field = ({ label, value, onChange, hint }) => (
-  <label className="block">
-    <div className="text-xs uppercase tracking-widest text-slate-400 mb-2">
-      {label}
-    </div>
-    <input
-      type="number"
-      value={value}
-      onChange={(e) => onChange(Number(e.target.value || 0))}
-      className="w-full rounded-xl border border-slate-700/60 bg-slate-950/40 text-white px-4 py-3 outline-none
-                 focus:ring-2 focus:ring-white/20 focus:border-white/20 transition"
-    />
-    {hint ? <div className="mt-2 text-xs text-slate-400">{hint}</div> : null}
-  </label>
-);
 
 const ABTestingPro = () => {
   const [controlVisitors, setControlVisitors] = useState(1000);
@@ -48,7 +34,6 @@ const ABTestingPro = () => {
 
   // ---------- Scenario Presets (Demo scenarios) ----------
   const applyScenario = (preset) => {
-    // базовые дефолты (чтобы не тащить мусор)
     const base = {
       revenuePerConversion: 50,
       testCost: 200,
@@ -283,156 +268,170 @@ const ABTestingPro = () => {
 
   // ---------- UI ----------
   return (
-    <div className="min-h-screen bg-gray-900 text-white px-6 py-10">
-      {activeTab === "calculator" && (
-        <div className="grid grid-cols-12 gap-6">
-          {/* LEFT — Demo scenarios + Premium Inputs */}
-          <div className="col-span-12 lg:col-span-4 space-y-6">
-            <div className="rounded-3xl border border-slate-200/70 dark:border-slate-700/60 bg-white/70 dark:bg-slate-900/40 backdrop-blur shadow-xl p-6">
-              <div className="text-sm uppercase tracking-widest text-slate-500 dark:text-slate-300/80">
-                Demo scenarios
+    <div className="min-h-screen px-6 py-10 bg-[radial-gradient(1200px_circle_at_20%_0%,rgba(16,185,129,0.18),transparent_55%),radial-gradient(900px_circle_at_90%_10%,rgba(59,130,246,0.14),transparent_55%),linear-gradient(to_bottom,rgba(2,6,23,1),rgba(15,23,42,1))] text-white">
+      <div className="mx-auto max-w-7xl">
+        {activeTab === "calculator" && (
+          <div className="grid grid-cols-12 gap-6">
+            {/* LEFT (sticky) */}
+            <div className="col-span-12 lg:col-span-4 space-y-6 lg:sticky lg:top-6 h-fit">
+              <div className="rounded-3xl border border-white/10 bg-gradient-to-b from-white/10 to-white/5 p-6 shadow-2xl">
+                <div className="text-xs uppercase tracking-widest opacity-80">
+                  Experiment setup
+                </div>
+                <h1 className="mt-2 text-2xl font-extrabold">A/B Testing Pro</h1>
+                <p className="mt-2 text-sm opacity-85">
+                  Edit counts + business assumptions. Policy will decide automatically.
+                </p>
               </div>
-              <h3 className="mt-1 text-xl font-extrabold text-slate-900 dark:text-white">
-                One-click presets
-              </h3>
-              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300/90">
-                Быстро переключайся между кейсами, чтобы проверять policy правила.
-              </p>
 
-              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
-                {scenarios.map((s) => (
-                  <button
-                    key={s.id}
-                    onClick={() => applyScenario(s.preset)}
-                    className="text-left rounded-2xl border border-slate-200/70 dark:border-slate-700/60 bg-white/60 dark:bg-slate-900/40 hover:bg-white/80 dark:hover:bg-slate-900/60 transition-all p-4"
-                  >
-                    <div className="font-bold text-slate-900 dark:text-white">
-                      {s.title}
-                    </div>
-                    <div className="text-xs text-slate-600 dark:text-slate-300/80 mt-1">
-                      {s.hint}
-                    </div>
-                  </button>
-                ))}
-              </div>
+              <PanelCard title="Control (A)" subtitle="Baseline variant">
+                <InputField
+                  label="Visitors"
+                  value={controlVisitors}
+                  onChange={setControlVisitors}
+                  min={0}
+                  step={1}
+                />
+                <InputField
+                  label="Conversions"
+                  value={controlConversions}
+                  onChange={setControlConversions}
+                  min={0}
+                  step={1}
+                />
+              </PanelCard>
+
+              <PanelCard title="Treatment (B)" subtitle="Test variant">
+                <InputField
+                  label="Visitors"
+                  value={treatmentVisitors}
+                  onChange={setTreatmentVisitors}
+                  min={0}
+                  step={1}
+                />
+                <InputField
+                  label="Conversions"
+                  value={treatmentConversions}
+                  onChange={setTreatmentConversions}
+                  min={0}
+                  step={1}
+                />
+              </PanelCard>
+
+              <PanelCard title="Business" subtitle="ROI + risk assumptions (MVP)">
+                <InputField
+                  label="Revenue / conversion"
+                  value={revenuePerConversion}
+                  onChange={setRevenuePerConversion}
+                  min={0}
+                  step={1}
+                  suffix="€"
+                />
+                <InputField
+                  label="Test cost"
+                  value={testCost}
+                  onChange={setTestCost}
+                  min={0}
+                  step={10}
+                  suffix="€"
+                />
+                <InputField
+                  label="Risk penalty"
+                  value={riskPenaltyPct}
+                  onChange={setRiskPenaltyPct}
+                  min={0}
+                  step={1}
+                  suffix="%"
+                  hint="Penalty under uncertainty."
+                />
+              </PanelCard>
+
+              <PanelCard title="Traffic expectation" subtitle="Used for SRM governance">
+                <InputField
+                  label="Expected A share"
+                  value={expectedSplitA}
+                  onChange={setExpectedSplitA}
+                  min={0}
+                  step={1}
+                  suffix="%"
+                  hint="E.g. 50"
+                />
+                <InputField
+                  label="Expected B share"
+                  value={expectedSplitB}
+                  onChange={setExpectedSplitB}
+                  min={0}
+                  step={1}
+                  suffix="%"
+                  hint="E.g. 50"
+                />
+                <div className="text-xs text-slate-500 dark:text-slate-300/80">
+                  Tip: keep A+B ≈ 100 (we normalize internally).
+                </div>
+              </PanelCard>
             </div>
 
-            <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur p-6 shadow-xl">
-              <div className="text-xs uppercase tracking-widest text-slate-400">
-                Inputs
-              </div>
-              <h3 className="mt-1 text-xl font-extrabold">
-                Experiment setup
-              </h3>
-              <p className="mt-2 text-sm text-slate-300/80">
-                Edit counts + business assumptions. Policy will decide automatically.
-              </p>
+            {/* CENTER */}
+            <div className="col-span-12 lg:col-span-5 space-y-6">
+              <DecisionHero
+                decision={decision}
+                confidence={decisionConfidence}
+                topRule={policyResult?.triggeredRules?.[0] || null}
+                darkMode={darkMode}
+              />
 
-              <div className="mt-6 grid grid-cols-1 gap-4">
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <div className="font-bold mb-4">Control (A)</div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Field
-                      label="Visitors"
-                      value={controlVisitors}
-                      onChange={setControlVisitors}
-                    />
-                    <Field
-                      label="Conversions"
-                      value={controlConversions}
-                      onChange={setControlConversions}
-                    />
-                  </div>
+              <StatsStrip
+                pValue={pValue}
+                upliftPct={improvement}
+                zScore={zScore}
+                alpha={0.05}
+              />
+
+              {/* Demo scenarios (kept) */}
+              <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur shadow-xl p-6">
+                <div className="text-sm uppercase tracking-widest opacity-80">
+                  Demo scenarios
                 </div>
+                <h3 className="mt-1 text-xl font-extrabold">One-click presets</h3>
+                <p className="mt-2 text-sm opacity-85">
+                  Быстро переключайся между кейсами, чтобы проверять policy правила.
+                </p>
 
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <div className="font-bold mb-4">Treatment (B)</div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Field
-                      label="Visitors"
-                      value={treatmentVisitors}
-                      onChange={setTreatmentVisitors}
-                    />
-                    <Field
-                      label="Conversions"
-                      value={treatmentConversions}
-                      onChange={setTreatmentConversions}
-                    />
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <div className="font-bold mb-4">Business</div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Field
-                      label="Revenue / conv (€)"
-                      value={revenuePerConversion}
-                      onChange={setRevenuePerConversion}
-                    />
-                    <Field
-                      label="Test cost (€)"
-                      value={testCost}
-                      onChange={setTestCost}
-                    />
-                    <Field
-                      label="Risk penalty (%)"
-                      value={riskPenaltyPct}
-                      onChange={setRiskPenaltyPct}
-                      hint="Penalty under uncertainty."
-                    />
-                    <Field
-                      label="Expected A (%)"
-                      value={expectedSplitA}
-                      onChange={setExpectedSplitA}
-                      hint="Traffic expectation (e.g. 50/50)."
-                    />
-                    <Field
-                      label="Expected B (%)"
-                      value={expectedSplitB}
-                      onChange={setExpectedSplitB}
-                    />
-                  </div>
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {scenarios.map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() => applyScenario(s.preset)}
+                      className="text-left rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all p-4"
+                    >
+                      <div className="font-bold">{s.title}</div>
+                      <div className="text-xs opacity-80 mt-1">{s.hint}</div>
+                    </button>
+                  ))}
                 </div>
               </div>
+
+              <GovernancePanel
+                signals={signals}
+                policyError={policyError}
+                policyDocLoaded={!policyLoading && !!policyDoc}
+              />
+            </div>
+
+            {/* RIGHT — Details */}
+            <div className="col-span-12 lg:col-span-3 space-y-6">
+              <PolicyDemoPanel
+                pValue={pValue}
+                upliftPct={improvement}
+                signals={signals}
+                policyResult={policyResult}
+                policyError={policyError}
+                policyDocLoaded={!policyLoading && !!policyDoc}
+              />
             </div>
           </div>
-
-          {/* CENTER — Decision */}
-          <div className="col-span-12 lg:col-span-5 space-y-6">
-            <DecisionHero
-              decision={decision}
-              confidence={decisionConfidence}
-              topRule={policyResult?.triggeredRules?.[0] || null}
-              darkMode={darkMode}
-            />
-
-            <StatsStrip
-              pValue={pValue}
-              upliftPct={improvement}
-              zScore={zScore}
-              alpha={0.05}
-            />
-
-            <GovernancePanel
-              signals={signals}
-              policyError={policyError}
-              policyDocLoaded={!policyLoading && !!policyDoc}
-            />
-          </div>
-
-          {/* RIGHT — Details */}
-          <div className="col-span-12 lg:col-span-3 space-y-6">
-            <PolicyDemoPanel
-              pValue={pValue}
-              upliftPct={improvement}
-              signals={signals}
-              policyResult={policyResult}
-              policyError={policyError}
-              policyDocLoaded={!policyLoading && !!policyDoc}
-            />
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
