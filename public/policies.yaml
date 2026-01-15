@@ -85,6 +85,23 @@ rules:
       - 'srm_level != "RED"'
       - 'expected_loss_level != "RED"'
       - 'roi_level != "RED"'
+      
+  - id: "IMPLEMENT_GOOD"
+    title: "Implement: significant uplift with governance OK"
+    severity: "HIGH"
+    priority: 650
+    when: 'p_value < 0.05 && uplift_pct > 0 && effect_size_level != "RED" && srm_level != "RED" && expected_loss_level != "RED" && roi_level != "RED"'
+    then:
+      decision: "IMPLEMENT_TREATMENT"
+      confidence: 0.9
+    reason: "Statistically significant win with practical effect, governance OK."
+    evidence:
+      - "p_value < 0.05"
+      - "uplift_pct > 0"
+      - "effect_size_level != RED"
+      - "srm_level != RED"
+      - "expected_loss_level != RED"
+      - "roi_level != RED"
 
   # --------------------
   # Not significant -> continue
