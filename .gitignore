@@ -133,3 +133,6 @@ report.html
 !public/
 !public/policies.yaml
 !public/policies/policies.yaml
+
+# backups
+*.bak*
