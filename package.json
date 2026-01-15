@@ -80,7 +80,8 @@
     "serve": "npx serve -s build -l 3000",
     "clean": "rm -rf build node_modules package-lock.json",
     "reinstall": "npm run clean && npm install",
-    "update-deps": "npx npm-check-updates -u && npm install"
+    "update-deps": "npx npm-check-updates -u && npm install",
+    "test:ci": "react-scripts test --watchAll=false"
   },
   "eslintConfig": {
     "extends": [
