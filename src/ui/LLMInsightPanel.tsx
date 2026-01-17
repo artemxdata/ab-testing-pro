@@ -57,7 +57,7 @@ export default function LLMInsightPanel({ decision, confidence, signals }: Props
     }
 
     return parts.join("\n\n");
-  }, [decision, confidence, signals, confPct]);
+  }, [decision, signals, confPct]); // Добавляем 'confPct' в зависимости, чтобы избежать предупреждения
 
   return (
     <div className="rounded-3xl border border-slate-200/10 bg-slate-900/35 backdrop-blur shadow-xl">
