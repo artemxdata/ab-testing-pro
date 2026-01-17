@@ -263,12 +263,12 @@ const ABTestingPro = () => {
 
   // ---------- UI ----------
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
+    <div className="min-h-screen px-6 py-10 text-white bg-[#050814]">
+      <div className="mx-auto max-w-7xl">
         {activeTab === "calculator" && (
-          <div className="grid grid-cols-12 gap-6">
+          <div className="grid grid-cols-12 gap-6 items-start">
             {/* LEFT — Inputs */}
-            <div className="col-span-12 lg:col-span-4 space-y-6">
+            <div className="col-span-12 lg:col-span-4 space-y-6 lg:sticky lg:top-6 h-fit">
               <PanelCard
                 title="Experiment setup"
                 subtitle="Edit counts + business assumptions"
@@ -306,9 +306,7 @@ const ABTestingPro = () => {
                         value={treatmentVisitors}
                         min={0}
                         step={1}
-                        onChange={(v) =>
-                          setTreatmentVisitors(Number(v || 0))
-                        }
+                        onChange={(v) => setTreatmentVisitors(Number(v || 0))}
                       />
                       <InputField
                         label="Conversions"
@@ -433,7 +431,7 @@ const ABTestingPro = () => {
             </div>
 
             {/* RIGHT — Details */}
-            <div className="col-span-12 lg:col-span-3 space-y-6">
+            <div className="col-span-12 lg:col-span-3 space-y-6 lg:sticky lg:top-6 self-start">
               <PolicyDemoPanel
                 pValue={pValue}
                 upliftPct={improvement}

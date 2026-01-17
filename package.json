@@ -26,10 +26,10 @@
   "homepage": "https://artemxdata.github.io/ab-testing-pro",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/ab-testing-pro.git"
+    "url": "https://github.com/artemxdata/ab-testing-pro.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/ab-testing-pro/issues"
+    "url": "https://github.com/artemxdata/ab-testing-pro/issues"
   },
   "license": "MIT",
   "engines": {
@@ -58,15 +58,15 @@
     "yaml": "^2.8.2"
   },
   "devDependencies": {
-    "autoprefixer": "^10.4.13",
+    "autoprefixer": "^10.4.23",
     "eslint": "^8.28.0",
     "eslint-plugin-react": "^7.31.11",
     "eslint-plugin-react-hooks": "^4.6.0",
     "gh-pages": "^4.0.0",
-    "postcss": "^8.4.19",
+    "postcss": "^8.5.6",
     "raw-loader": "^4.0.2",
     "source-map-explorer": "^2.5.3",
-    "tailwindcss": "^3.2.4",
+    "tailwindcss": "^3.4.19",
     "tsx": "^4.21.0"
   },
   "scripts": {
