@@ -6,6 +6,7 @@ import {
   DecisionHero,
   GovernancePanel,
   StatsStrip,
+  LLMInsightPanel,
 } from "../ui";
 import PanelCard from "../ui/PanelCard.tsx";
 import InputField from "../ui/InputField.tsx";
@@ -269,56 +270,14 @@ const ABTestingPro = () => {
   // ---------- UI ----------
   return (
     <div className="min-h-screen px-6 py-10 text-white bg-[#050814]">
-      {/* Top brand bar */}
-      <div className="mx-auto max-w-7xl px-1 sm:px-2 pb-6">
-        <div className="flex items-center justify-between gap-4">
-          {/* LEFT — Brand */}
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-white/10 border border-white/10 backdrop-blur flex items-center justify-center shadow-sm">
-              <span className="text-lg">🧠</span>
-            </div>
-
-            <div className="leading-tight">
-              <div className="text-xs uppercase tracking-[0.25em] text-white/60">
-                A/B Testing Pro
-              </div>
-              <div className="text-sm font-semibold text-white/90">
-                Created by <span className="text-white">ARTEMXDATA</span>
-              </div>
-            </div>
-          </div>
-
-          {/* RIGHT — Status + actions */}
-          <div className="flex items-center gap-3">
-            {/* Policy status */}
-            {policyLoading && (
-              <span className="px-3 py-1 rounded-full text-xs font-semibold border border-amber-400/30 bg-amber-500/10 text-amber-300">
-                ⏳ Policies loading
-              </span>
-            )}
-
-            {!policyLoading && policyError && (
-              <span className="px-3 py-1 rounded-full text-xs font-semibold border border-rose-400/30 bg-rose-500/10 text-rose-300">
-                ⚠️ Policy error
-              </span>
-            )}
-
-            {!policyLoading && policyDoc && !policyError && (
-              <span className="px-3 py-1 rounded-full text-xs font-semibold border border-emerald-400/30 bg-emerald-500/10 text-emerald-300">
-                ✅ Policies active
-              </span>
-            )}
-
-            {/* Share button */}
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(window.location.href);
-              }}
-              className="px-3 py-1 rounded-full text-xs font-semibold border border-white/10 bg-white/5 text-white/70 hover:bg-white/10 transition"
-            >
-              🔗 Copy link
-            </button>
-          </div>
+      {/* Mini-header */}
+      <div className="mb-8 flex items-center justify-between">
+        <div className="text-xs uppercase tracking-[0.35em] text-slate-300/60">
+          CREATED BY{" "}
+          <span className="text-slate-200/90 font-semibold">ARTEMXDATA</span>
+        </div>
+        <div className="text-xs text-slate-300/50">
+          A/B Testing Pro · Policy-driven decisions
         </div>
       </div>
 
@@ -455,35 +414,16 @@ const ABTestingPro = () => {
                 alpha={0.05}
               />
 
-              {/* Demo scenarios (kept) */}
-              <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur shadow-xl p-6">
-                <div className="text-sm uppercase tracking-widest opacity-80">
-                  Demo scenarios
-                </div>
-                <h3 className="mt-1 text-xl font-extrabold">One-click presets</h3>
-                <p className="mt-2 text-sm opacity-85">
-                  Быстро переключайся между кейсами, чтобы проверять policy
-                  правила.
-                </p>
-
-                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {scenarios.map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => applyScenario(s.preset)}
-                      className="text-left rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all p-4"
-                    >
-                      <div className="font-bold">{s.title}</div>
-                      <div className="text-xs opacity-80 mt-1">{s.hint}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               <GovernancePanel
                 signals={signals}
                 policyError={policyError}
                 policyDocLoaded={!policyLoading && !!policyDoc}
+              />
+
+              <LLMInsightPanel
+                decision={decision}
+                confidence={decisionConfidence}
+                signals={signals}
               />
             </div>
 

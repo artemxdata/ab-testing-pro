@@ -9,3 +9,5 @@ export { default as StatsStrip } from "./StatsStrip.tsx";
 export { default as InputField } from "./InputField.tsx";
 export { default as PanelCard } from "./PanelCard.tsx";
 
+export { default as LLMInsightPanel } from "./LLMInsightPanel.tsx";
+
