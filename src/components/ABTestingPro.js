@@ -1,7 +1,12 @@
 // src/components/ABTestingPro.js
 import React, { useMemo, useState } from "react";
 
-import { PolicyDemoPanel, DecisionHero, GovernancePanel, StatsStrip } from "../ui";
+import {
+  PolicyDemoPanel,
+  DecisionHero,
+  GovernancePanel,
+  StatsStrip,
+} from "../ui";
 import PanelCard from "../ui/PanelCard.tsx";
 import InputField from "../ui/InputField.tsx";
 
@@ -266,7 +271,8 @@ const ABTestingPro = () => {
     <div className="min-h-screen px-6 py-10 text-white bg-[#050814]">
       {/* Top brand bar */}
       <div className="mx-auto max-w-7xl px-1 sm:px-2 pb-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
+          {/* LEFT — Brand */}
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-2xl bg-white/10 border border-white/10 backdrop-blur flex items-center justify-center shadow-sm">
               <span className="text-lg">🧠</span>
@@ -282,13 +288,36 @@ const ABTestingPro = () => {
             </div>
           </div>
 
-          <div className="hidden sm:flex items-center gap-2">
-            <span className="px-3 py-1 rounded-full text-xs font-semibold border border-white/10 bg-white/5 text-white/70">
-              Policy-driven
-            </span>
-            <span className="px-3 py-1 rounded-full text-xs font-semibold border border-white/10 bg-white/5 text-white/70">
-              Enterprise MVP
-            </span>
+          {/* RIGHT — Status + actions */}
+          <div className="flex items-center gap-3">
+            {/* Policy status */}
+            {policyLoading && (
+              <span className="px-3 py-1 rounded-full text-xs font-semibold border border-amber-400/30 bg-amber-500/10 text-amber-300">
+                ⏳ Policies loading
+              </span>
+            )}
+
+            {!policyLoading && policyError && (
+              <span className="px-3 py-1 rounded-full text-xs font-semibold border border-rose-400/30 bg-rose-500/10 text-rose-300">
+                ⚠️ Policy error
+              </span>
+            )}
+
+            {!policyLoading && policyDoc && !policyError && (
+              <span className="px-3 py-1 rounded-full text-xs font-semibold border border-emerald-400/30 bg-emerald-500/10 text-emerald-300">
+                ✅ Policies active
+              </span>
+            )}
+
+            {/* Share button */}
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(window.location.href);
+              }}
+              className="px-3 py-1 rounded-full text-xs font-semibold border border-white/10 bg-white/5 text-white/70 hover:bg-white/10 transition"
+            >
+              🔗 Copy link
+            </button>
           </div>
         </div>
       </div>
@@ -433,7 +462,8 @@ const ABTestingPro = () => {
                 </div>
                 <h3 className="mt-1 text-xl font-extrabold">One-click presets</h3>
                 <p className="mt-2 text-sm opacity-85">
-                  Быстро переключайся между кейсами, чтобы проверять policy правила.
+                  Быстро переключайся между кейсами, чтобы проверять policy
+                  правила.
                 </p>
 
                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
