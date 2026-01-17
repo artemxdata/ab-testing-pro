@@ -264,7 +264,36 @@ const ABTestingPro = () => {
   // ---------- UI ----------
   return (
     <div className="min-h-screen px-6 py-10 text-white bg-[#050814]">
-      <div className="mx-auto max-w-7xl">
+      {/* Top brand bar */}
+      <div className="mx-auto max-w-7xl px-1 sm:px-2 pb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-2xl bg-white/10 border border-white/10 backdrop-blur flex items-center justify-center shadow-sm">
+              <span className="text-lg">🧠</span>
+            </div>
+
+            <div className="leading-tight">
+              <div className="text-xs uppercase tracking-[0.25em] text-white/60">
+                A/B Testing Pro
+              </div>
+              <div className="text-sm font-semibold text-white/90">
+                Created by <span className="text-white">ARTEMXDATA</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="hidden sm:flex items-center gap-2">
+            <span className="px-3 py-1 rounded-full text-xs font-semibold border border-white/10 bg-white/5 text-white/70">
+              Policy-driven
+            </span>
+            <span className="px-3 py-1 rounded-full text-xs font-semibold border border-white/10 bg-white/5 text-white/70">
+              Enterprise MVP
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-7xl px-1 sm:px-2">
         {activeTab === "calculator" && (
           <div className="grid grid-cols-12 gap-6 items-start">
             {/* LEFT — Inputs */}
@@ -330,9 +359,7 @@ const ABTestingPro = () => {
                     value={revenuePerConversion}
                     min={0}
                     step={1}
-                    onChange={(v) =>
-                      setRevenuePerConversion(Number(v || 0))
-                    }
+                    onChange={(v) => setRevenuePerConversion(Number(v || 0))}
                   />
                   <InputField
                     label="Test cost"

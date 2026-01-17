@@ -21,8 +21,7 @@ function metaByDecision(decision: string) {
         emoji: "🚀",
         title: "Implement Treatment B",
         subtitle: "Rollout is allowed by policy.",
-        tone:
-          "from-emerald-500/90 via-emerald-600/90 to-teal-600/90",
+        tone: "from-emerald-500/90 via-emerald-600/90 to-teal-600/90",
         pill: "bg-emerald-600/20 text-emerald-50 border-emerald-200/20",
       };
     case "REJECT_TREATMENT":
@@ -65,17 +64,25 @@ export default function DecisionHero({ decision, confidence, topRule }: Props) {
   const severity = topRule?.severity || "";
 
   return (
-    <div className={`rounded-3xl p-6 sm:p-8 bg-gradient-to-r ${meta.tone} text-white shadow-2xl border border-white/10`}>
+    <div
+      className={`rounded-3xl p-6 sm:p-8 bg-gradient-to-r ${meta.tone} text-white shadow-2xl border border-white/10 overflow-hidden`}
+    >
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-        <div className="flex gap-4">
-          <div className="text-4xl sm:text-5xl leading-none">{meta.emoji}</div>
-          <div>
+        {/* LEFT */}
+        <div className="flex gap-4 min-w-0">
+          <div className="text-4xl sm:text-5xl leading-none shrink-0">
+            {meta.emoji}
+          </div>
+
+          <div className="min-w-0">
             <div className="text-sm uppercase tracking-widest opacity-90">
               Policy Decision
             </div>
+
             <h2 className="text-3xl sm:text-4xl font-extrabold leading-tight">
               {meta.title}
             </h2>
+
             <p className="mt-2 text-base sm:text-lg opacity-90">
               {meta.subtitle}
             </p>
@@ -84,18 +91,22 @@ export default function DecisionHero({ decision, confidence, topRule }: Props) {
               <div className="text-sm font-semibold opacity-95">
                 Why (top reason)
               </div>
-              <div className="mt-1 text-sm sm:text-base opacity-90">
+              <div className="mt-1 text-sm sm:text-base opacity-90 break-words">
                 {reason}
               </div>
             </div>
           </div>
         </div>
 
-        <div className="shrink-0">
-          <div className="flex items-center gap-3">
-            <span className={`px-3 py-1 rounded-full border text-xs font-bold ${meta.pill}`}>
+        {/* RIGHT */}
+        <div className="w-full md:w-[300px] max-w-full">
+          <div className="flex flex-wrap items-center gap-2 justify-start md:justify-end">
+            <span
+              className={`px-3 py-1 rounded-full border text-xs font-bold ${meta.pill}`}
+            >
               {decision}
             </span>
+
             {severity ? (
               <span className="px-3 py-1 rounded-full border border-white/15 bg-white/10 text-xs font-semibold">
                 {String(severity).toUpperCase()}
@@ -103,10 +114,12 @@ export default function DecisionHero({ decision, confidence, topRule }: Props) {
             ) : null}
           </div>
 
-          <div className="mt-4 rounded-2xl border border-white/15 bg-white/10 p-4 w-full md:w-[280px]">
-            <div className="flex items-center justify-between">
+          <div className="mt-4 rounded-2xl border border-white/15 bg-white/10 p-4 w-full max-w-full">
+            <div className="flex items-center justify-between gap-3">
               <div className="text-sm font-semibold">Confidence</div>
-              <div className="text-sm font-bold">{(conf * 100).toFixed(0)}%</div>
+              <div className="text-sm font-bold tabular-nums">
+                {(conf * 100).toFixed(0)}%
+              </div>
             </div>
 
             <div className="mt-2 h-2 w-full rounded-full bg-white/20 overflow-hidden">
