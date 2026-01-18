@@ -270,22 +270,47 @@ const ABTestingPro = () => {
   // ---------- UI ----------
   return (
     <div className="min-h-screen px-6 py-10 text-white bg-[#050814]">
-      {/* Mini-header */}
-      <div className="mb-8 flex items-center justify-between">
-        <div className="text-xs uppercase tracking-[0.35em] text-slate-300/60">
-          CREATED BY{" "}
-          <span className="text-slate-200/90 font-semibold">ARTEMXDATA</span>
-        </div>
-        <div className="text-xs text-slate-300/50">
-          A/B Testing Pro · Policy-driven decisions
-        </div>
-      </div>
+      {activeTab === "calculator" && (
+        <div className="mx-auto max-w-7xl px-1 sm:px-2">
+          {/* inserted header (first element inside return, before grid) */}
+          <div className="mb-6 flex justify-between items-center">
+            <div className="text-xs uppercase tracking-[0.35em] text-slate-400 dark:text-slate-500">
+              Created by{" "}
+              <span className="text-slate-200 dark:text-white font-semibold">
+                ARTEMXDATA
+              </span>
+            </div>
 
-      <div className="mx-auto max-w-7xl px-1 sm:px-2">
-        {activeTab === "calculator" && (
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              A/B Testing Pro · Policy-driven decisions
+            </div>
+          </div>
+
           <div className="grid grid-cols-12 gap-6 items-start">
             {/* LEFT — Inputs */}
             <div className="col-span-12 lg:col-span-4 space-y-6 lg:sticky lg:top-6 h-fit">
+              <PanelCard
+                title="Scenario presets"
+                subtitle="One-click demo datasets (MVP)"
+              >
+                <div className="grid grid-cols-1 gap-2">
+                  {scenarios.map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() => applyScenario(s.preset)}
+                      className="text-left rounded-2xl border border-slate-200/70 dark:border-slate-700/60 bg-white/70 dark:bg-slate-900/40 backdrop-blur px-4 py-3 transition hover:shadow-md"
+                    >
+                      <div className="font-semibold text-slate-900 dark:text-white">
+                        {s.title}
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-300/80 mt-0.5">
+                        {s.hint}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </PanelCard>
+
               <PanelCard
                 title="Experiment setup"
                 subtitle="Edit counts + business assumptions"
@@ -424,6 +449,7 @@ const ABTestingPro = () => {
                 decision={decision}
                 confidence={decisionConfidence}
                 signals={signals}
+                policyResult={policyResult}
               />
             </div>
 
@@ -439,8 +465,8 @@ const ABTestingPro = () => {
               />
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
