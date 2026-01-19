@@ -269,204 +269,229 @@ const ABTestingPro = () => {
 
   // ---------- UI ----------
   return (
-    <div className="min-h-screen px-6 py-10 text-white bg-[#050814]">
-      {activeTab === "calculator" && (
-        <div className="mx-auto max-w-7xl px-1 sm:px-2">
-          {/* inserted header (first element inside return, before grid) */}
-          <div className="mb-6 flex justify-between items-center">
-            <div className="text-xs uppercase tracking-[0.35em] text-slate-400 dark:text-slate-500">
-              Created by{" "}
-              <span className="text-slate-200 dark:text-white font-semibold">
-                ARTEMXDATA
-              </span>
+    <div className="min-h-screen bg-[#050914] text-white px-6 py-10">
+      <div className="mx-auto w-full max-w-[1680px] relative">
+        {activeTab === "calculator" && (
+          <>
+            {/* header here */}
+            <div className="mb-6 flex items-center justify-between">
+              <div className="text-xs uppercase tracking-[0.35em] text-slate-400">
+                Created by{" "}
+                <span className="text-slate-100 font-semibold">ARTEMXDATA</span>
+              </div>
+
+              <div className="text-xs text-slate-500">
+                A/B Testing Pro · Policy-driven decisions
+              </div>
             </div>
 
-            <div className="text-xs text-slate-500 dark:text-slate-400">
-              A/B Testing Pro · Policy-driven decisions
+            {/* glow */}
+            <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+              <div className="absolute -top-24 left-1/2 h-[520px] w-[900px] -translate-x-1/2 rounded-full bg-white/10 blur-3xl" />
+              <div className="absolute top-[380px] left-[8%] h-[420px] w-[520px] rounded-full bg-emerald-500/10 blur-3xl" />
+              <div className="absolute top-[260px] right-[10%] h-[420px] w-[520px] rounded-full bg-sky-500/10 blur-3xl" />
             </div>
-          </div>
 
-          <div className="grid grid-cols-12 gap-6 items-start">
-            {/* LEFT — Inputs */}
-            <div className="col-span-12 lg:col-span-4 space-y-6 lg:sticky lg:top-6 h-fit">
-              <PanelCard
-                title="Scenario presets"
-                subtitle="One-click demo datasets (MVP)"
-              >
-                <div className="grid grid-cols-1 gap-2">
-                  {scenarios.map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => applyScenario(s.preset)}
-                      className="text-left rounded-2xl border border-slate-200/70 dark:border-slate-700/60 bg-white/70 dark:bg-slate-900/40 backdrop-blur px-4 py-3 transition hover:shadow-md"
-                    >
-                      <div className="font-semibold text-slate-900 dark:text-white">
-                        {s.title}
-                      </div>
-                      <div className="text-xs text-slate-500 dark:text-slate-300/80 mt-0.5">
-                        {s.hint}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </PanelCard>
+            {/* grid here */}
+            <div className="grid grid-cols-12 gap-6 2xl:gap-8 items-start">
+              {/* LEFT — Inputs */}
+              <div className="col-span-12 lg:col-span-4 2xl:col-span-4 space-y-6 lg:sticky lg:top-6 h-fit">
+                <PanelCard
+                  title="Scenario presets"
+                  subtitle="One-click demo datasets (MVP)"
+                >
+                  <div className="grid grid-cols-1 gap-2">
+                    {scenarios.map((s) => (
+                      <button
+                        key={s.id}
+                        onClick={() => applyScenario(s.preset)}
+                        className="text-left rounded-2xl border border-slate-200/70 dark:border-slate-700/60 bg-white/70 dark:bg-slate-900/40 backdrop-blur px-4 py-3 transition hover:shadow-md"
+                      >
+                        <div className="font-semibold text-slate-900 dark:text-white">
+                          {s.title}
+                        </div>
+                        <div className="text-xs text-slate-500 dark:text-slate-300/80 mt-0.5">
+                          {s.hint}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </PanelCard>
 
-              <PanelCard
-                title="Experiment setup"
-                subtitle="Edit counts + business assumptions"
-              >
-                <div className="grid grid-cols-1 gap-6">
-                  <div>
-                    <div className="text-xs uppercase tracking-widest text-slate-500 dark:text-slate-300/80">
-                      Control (A)
+                <PanelCard
+                  title="Experiment setup"
+                  subtitle="Edit counts + business assumptions"
+                >
+                  <div className="grid grid-cols-1 gap-6">
+                    <div>
+                      <div className="text-xs uppercase tracking-widest text-slate-500 dark:text-slate-300/80">
+                        Control (A)
+                      </div>
+                      <div className="mt-3 grid grid-cols-2 gap-3">
+                        <InputField
+                          label="Visitors"
+                          value={controlVisitors}
+                          min={0}
+                          step={1}
+                          onChange={(v) =>
+                            setControlVisitors(Number(v || 0))
+                          }
+                        />
+                        <InputField
+                          label="Conversions"
+                          value={controlConversions}
+                          min={0}
+                          step={1}
+                          onChange={(v) =>
+                            setControlConversions(Number(v || 0))
+                          }
+                        />
+                      </div>
                     </div>
-                    <div className="mt-3 grid grid-cols-2 gap-3">
-                      <InputField
-                        label="Visitors"
-                        value={controlVisitors}
-                        min={0}
-                        step={1}
-                        onChange={(v) => setControlVisitors(Number(v || 0))}
-                      />
-                      <InputField
-                        label="Conversions"
-                        value={controlConversions}
-                        min={0}
-                        step={1}
-                        onChange={(v) => setControlConversions(Number(v || 0))}
-                      />
+
+                    <div>
+                      <div className="text-xs uppercase tracking-widest text-slate-500 dark:text-slate-300/80">
+                        Treatment (B)
+                      </div>
+                      <div className="mt-3 grid grid-cols-2 gap-3">
+                        <InputField
+                          label="Visitors"
+                          value={treatmentVisitors}
+                          min={0}
+                          step={1}
+                          onChange={(v) =>
+                            setTreatmentVisitors(Number(v || 0))
+                          }
+                        />
+                        <InputField
+                          label="Conversions"
+                          value={treatmentConversions}
+                          min={0}
+                          step={1}
+                          onChange={(v) =>
+                            setTreatmentConversions(Number(v || 0))
+                          }
+                        />
+                      </div>
                     </div>
                   </div>
+                </PanelCard>
 
-                  <div>
-                    <div className="text-xs uppercase tracking-widest text-slate-500 dark:text-slate-300/80">
-                      Treatment (B)
-                    </div>
-                    <div className="mt-3 grid grid-cols-2 gap-3">
-                      <InputField
-                        label="Visitors"
-                        value={treatmentVisitors}
-                        min={0}
-                        step={1}
-                        onChange={(v) => setTreatmentVisitors(Number(v || 0))}
-                      />
-                      <InputField
-                        label="Conversions"
-                        value={treatmentConversions}
-                        min={0}
-                        step={1}
-                        onChange={(v) =>
-                          setTreatmentConversions(Number(v || 0))
-                        }
-                      />
-                    </div>
+                <PanelCard
+                  title="Business inputs"
+                  subtitle="MVP governance knobs"
+                >
+                  <div className="grid grid-cols-2 gap-3">
+                    <InputField
+                      label="Revenue / conv"
+                      suffix="€"
+                      value={revenuePerConversion}
+                      min={0}
+                      step={1}
+                      onChange={(v) =>
+                        setRevenuePerConversion(Number(v || 0))
+                      }
+                    />
+                    <InputField
+                      label="Test cost"
+                      suffix="€"
+                      value={testCost}
+                      min={0}
+                      step={10}
+                      onChange={(v) => setTestCost(Number(v || 0))}
+                    />
+                    <InputField
+                      label="Risk penalty"
+                      suffix="%"
+                      value={riskPenaltyPct}
+                      min={0}
+                      step={1}
+                      onChange={(v) =>
+                        setRiskPenaltyPct(Number(v || 0))
+                      }
+                    />
+                    <div />
                   </div>
-                </div>
-              </PanelCard>
+                </PanelCard>
 
-              <PanelCard title="Business inputs" subtitle="MVP governance knobs">
-                <div className="grid grid-cols-2 gap-3">
-                  <InputField
-                    label="Revenue / conv"
-                    suffix="€"
-                    value={revenuePerConversion}
-                    min={0}
-                    step={1}
-                    onChange={(v) => setRevenuePerConversion(Number(v || 0))}
-                  />
-                  <InputField
-                    label="Test cost"
-                    suffix="€"
-                    value={testCost}
-                    min={0}
-                    step={10}
-                    onChange={(v) => setTestCost(Number(v || 0))}
-                  />
-                  <InputField
-                    label="Risk penalty"
-                    suffix="%"
-                    value={riskPenaltyPct}
-                    min={0}
-                    step={1}
-                    onChange={(v) => setRiskPenaltyPct(Number(v || 0))}
-                  />
-                  <div />
-                </div>
-              </PanelCard>
+                <PanelCard
+                  title="Traffic expectation"
+                  subtitle="Used for SRM detection"
+                >
+                  <div className="grid grid-cols-2 gap-3">
+                    <InputField
+                      label="Expected A"
+                      suffix="%"
+                      value={expectedSplitA}
+                      min={0}
+                      step={1}
+                      onChange={(v) =>
+                        setExpectedSplitA(Number(v || 0))
+                      }
+                    />
+                    <InputField
+                      label="Expected B"
+                      suffix="%"
+                      value={expectedSplitB}
+                      min={0}
+                      step={1}
+                      onChange={(v) =>
+                        setExpectedSplitB(Number(v || 0))
+                      }
+                    />
+                  </div>
 
-              <PanelCard
-                title="Traffic expectation"
-                subtitle="Used for SRM detection"
-              >
-                <div className="grid grid-cols-2 gap-3">
-                  <InputField
-                    label="Expected A"
-                    suffix="%"
-                    value={expectedSplitA}
-                    min={0}
-                    step={1}
-                    onChange={(v) => setExpectedSplitA(Number(v || 0))}
-                  />
-                  <InputField
-                    label="Expected B"
-                    suffix="%"
-                    value={expectedSplitB}
-                    min={0}
-                    step={1}
-                    onChange={(v) => setExpectedSplitB(Number(v || 0))}
-                  />
-                </div>
+                  <div className="mt-3 text-xs text-slate-600 dark:text-slate-300/80">
+                    Tip: keep A+B = 100. If not, we normalize internally.
+                  </div>
+                </PanelCard>
+              </div>
 
-                <div className="mt-3 text-xs text-slate-600 dark:text-slate-300/80">
-                  Tip: keep A+B = 100. If not, we normalize internally.
-                </div>
-              </PanelCard>
+              {/* CENTER */}
+              <div className="col-span-12 lg:col-span-5 2xl:col-span-5 space-y-6">
+                <DecisionHero
+                  decision={decision}
+                  confidence={decisionConfidence}
+                  topRule={policyResult?.triggeredRules?.[0] || null}
+                  darkMode={darkMode}
+                />
+
+                <StatsStrip
+                  pValue={pValue}
+                  upliftPct={improvement}
+                  zScore={zScore}
+                  alpha={0.05}
+                />
+
+                <GovernancePanel
+                  signals={signals}
+                  policyError={policyError}
+                  policyDocLoaded={!policyLoading && !!policyDoc}
+                />
+
+                <LLMInsightPanel
+                  decision={decision}
+                  confidence={decisionConfidence}
+                  signals={signals}
+                  policyResult={policyResult}
+                />
+              </div>
+
+              {/* RIGHT — Details */}
+              <div className="col-span-12 lg:col-span-3 2xl:col-span-3 space-y-6 lg:sticky lg:top-6 self-start">
+                <PolicyDemoPanel
+                  pValue={pValue}
+                  upliftPct={improvement}
+                  signals={signals}
+                  policyResult={policyResult}
+                  policyError={policyError}
+                  policyDocLoaded={!policyLoading && !!policyDoc}
+                />
+              </div>
             </div>
-
-            {/* CENTER */}
-            <div className="col-span-12 lg:col-span-5 space-y-6">
-              <DecisionHero
-                decision={decision}
-                confidence={decisionConfidence}
-                topRule={policyResult?.triggeredRules?.[0] || null}
-                darkMode={darkMode}
-              />
-
-              <StatsStrip
-                pValue={pValue}
-                upliftPct={improvement}
-                zScore={zScore}
-                alpha={0.05}
-              />
-
-              <GovernancePanel
-                signals={signals}
-                policyError={policyError}
-                policyDocLoaded={!policyLoading && !!policyDoc}
-              />
-
-              <LLMInsightPanel
-                decision={decision}
-                confidence={decisionConfidence}
-                signals={signals}
-                policyResult={policyResult}
-              />
-            </div>
-
-            {/* RIGHT — Details */}
-            <div className="col-span-12 lg:col-span-3 space-y-6 lg:sticky lg:top-6 self-start">
-              <PolicyDemoPanel
-                pValue={pValue}
-                upliftPct={improvement}
-                signals={signals}
-                policyResult={policyResult}
-                policyError={policyError}
-                policyDocLoaded={!policyLoading && !!policyDoc}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 };
