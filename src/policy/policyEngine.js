@@ -1,103 +1,140 @@
 // src/policy/policyEngine.js
-import { evaluateWhen } from "./whenEvaluator";
 
-// Deterministic policy engine: YAML doc -> decision + triggeredRules
-// Matching order:
-// 1) rule.when (boolean expression) if present
-// 2) rule.match (simple equality object) if present
+function isObject(v) {
+  return v !== null && typeof v === "object" && !Array.isArray(v);
+}
 
-export function evaluatePolicies(policyDoc, signals) {
-  if (!policyDoc || typeof policyDoc !== "object") {
-    return {
-      decision: "CONTINUE_TEST",
-      confidence: 0.55,
-      triggeredRules: [],
-      reason: "Invalid policy document",
-    };
+function matchObject(match, signals) {
+  if (!match) return { ok: true, reasons: ["no match block"] };
+  if (!isObject(match)) return { ok: false, reasons: ["match is not an object"] };
+
+  const reasons = [];
+  for (const [k, expected] of Object.entries(match)) {
+    const actual = signals[k];
+    const ok = actual === expected;
+    reasons.push(ok ? `match ${k} == ${JSON.stringify(expected)}` : `FAIL ${k}: ${JSON.stringify(actual)} != ${JSON.stringify(expected)}`);
+    if (!ok) return { ok: false, reasons };
+  }
+  return { ok: true, reasons };
+}
+
+function evalWhen(expr, signals) {
+  if (!expr || !String(expr).trim()) return { ok: true, reasons: ["no when expression"] };
+
+  const reasons = [];
+  const normalized = String(expr).replace(/[()]/g, " ").replace(/\s+/g, " ").trim();
+  const parts = normalized.split(" ").filter(Boolean);
+
+  function readValue(token) {
+    if (token in signals) return signals[token];
+    if (/^-?\d+(\.\d+)?$/.test(token)) return Number(token);
+    if ((token.startsWith('"') && token.endsWith('"')) || (token.startsWith("'") && token.endsWith("'"))) {
+      return token.slice(1, -1);
+    }
+    return token;
   }
 
-  const defaultDecision = policyDoc.defaultDecision || "CONTINUE_TEST";
-  const defaultConfidence =
-    typeof policyDoc.defaultConfidence === "number" ? policyDoc.defaultConfidence : 0.55;
+  function evalComparison(lhsTok, op, rhsTok) {
+    const lhs = readValue(lhsTok);
+    const rhs = readValue(rhsTok);
 
-  const rules = Array.isArray(policyDoc.rules) ? policyDoc.rules : [];
-  const triggeredRules = [];
-
-  for (const rule of rules) {
-    if (!rule || typeof rule !== "object") continue;
-
-    const hasWhen = typeof rule.when === "string" && rule.when.trim().length > 0;
-    const hasMatch = rule.match && typeof rule.match === "object";
-
-    let matched = false;
-
-    try {
-      if (hasWhen) {
-        matched = evaluateWhen(rule.when, signals);
-      } else if (hasMatch) {
-        matched = true;
-        for (const [k, v] of Object.entries(rule.match)) {
-          if (signals?.[k] !== v) {
-            matched = false;
-            break;
-          }
-        }
-      } else {
-        matched = false;
+    const cmp = (() => {
+      switch (op) {
+        case "==": return lhs === rhs;
+        case "!=": return lhs !== rhs;
+        case ">":  return Number(lhs) > Number(rhs);
+        case ">=": return Number(lhs) >= Number(rhs);
+        case "<":  return Number(lhs) < Number(rhs);
+        case "<=": return Number(lhs) <= Number(rhs);
+        default: return false;
       }
-    } catch (e) {
-      matched = false;
-    }
+    })();
+
+    reasons.push(`${lhsTok}(${JSON.stringify(lhs)}) ${op} ${rhsTok}(${JSON.stringify(rhs)}) => ${cmp}`);
+    return cmp;
+  }
+
+  let i = 0;
+  let acc = null;
+  let pendingLogic = null;
+
+  while (i < parts.length) {
+    const a = parts[i++];
+    const op = parts[i++];
+    const b = parts[i++];
+
+    if (!a || !op || !b) return { ok: false, reasons: [...reasons, "invalid when expression tokens"] };
+
+    const res = evalComparison(a, op, b);
+
+    if (acc === null) acc = res;
+    else if (pendingLogic === "&&") acc = acc && res;
+    else if (pendingLogic === "||") acc = acc || res;
+    else acc = acc && res;
+
+    const next = parts[i];
+    if (next === "&&" || next === "||") {
+      pendingLogic = next;
+      i++;
+    } else pendingLogic = null;
+  }
+
+  return { ok: Boolean(acc), reasons };
+}
+
+function severityRank(sev) {
+  const s = String(sev || "INFO").toUpperCase();
+  const map = { CRITICAL: 5, HIGH: 4, WARN: 3, MEDIUM: 2, LOW: 1, INFO: 1 };
+  return map[s] ?? 1;
+}
+
+export function evaluatePolicies(doc, signals) {
+  const triggeredRules = [];
+  const trace = [];
+
+  for (const rule of doc.rules) {
+    const m = matchObject(rule.match, signals);
+    const w = evalWhen(rule.when, signals);
+
+    const matched = m.ok && w.ok;
+
+    trace.push({
+      ruleId: rule.id,
+      matched,
+      reasons: [...m.reasons, ...w.reasons],
+    });
 
     if (matched) {
       triggeredRules.push({
-        id: rule.id || "RULE_NO_ID",
-        title: rule.title || rule.id || "Untitled rule",
-        severity: rule.severity || "INFO",
+        id: rule.id,
+        title: rule.title,
+        severity: rule.severity,
         priority: typeof rule.priority === "number" ? rule.priority : 0,
-        decision: rule.then?.decision || defaultDecision,
-        confidence:
-          typeof rule.then?.confidence === "number" ? rule.then.confidence : defaultConfidence,
-        reason: rule.reason || rule.then?.reason || "",
-        evidence: Array.isArray(rule.evidence) ? rule.evidence : [],
+        decision: rule.then?.decision,
+        confidence: rule.then?.confidence,
+        reason: rule.reason,
+        evidence: rule.evidence,
       });
     }
   }
 
-  if (triggeredRules.length === 0) {
-    return {
-      decision: defaultDecision,
-      confidence: defaultConfidence,
-      triggeredRules: [],
-      reason: "No policy rule matched",
-    };
-  }
+  const sortedTriggered = triggeredRules.slice().sort((a, b) => {
+    const pa = typeof a.priority === "number" ? a.priority : 0;
+    const pb = typeof b.priority === "number" ? b.priority : 0;
+    if (pb !== pa) return pb - pa;
 
-  const severityRank = (s) => {
-    const m = String(s || "").toUpperCase();
-    if (m === "CRITICAL") return 5;
-    if (m === "HIGH") return 4;
-    if (m === "MEDIUM") return 3;
-    if (m === "LOW") return 2;
-    return 1;
-  };
+    const sa = severityRank(a.severity);
+    const sb = severityRank(b.severity);
+    if (sb !== sa) return sb - sa;
 
-  // Choose "top" rule:
-  // 1) priority desc
-  // 2) confidence desc
-  // 3) severity desc
-  triggeredRules.sort((a, b) => {
-    if (b.priority !== a.priority) return b.priority - a.priority;
-    if (b.confidence !== a.confidence) return b.confidence - a.confidence;
-    return severityRank(b.severity) - severityRank(a.severity);
+    return (b.confidence || 0) - (a.confidence || 0);
   });
 
-  const top = triggeredRules[0];
+  const best = sortedTriggered[0];
 
-  return {
-    decision: top.decision,
-    confidence: top.confidence,
-    triggeredRules,
-    reason: top.reason || "Matched policy rule",
-  };
+  const decision = best?.decision || doc.defaultDecision;
+  const confidence = best?.confidence ?? doc.defaultConfidence ?? 0.55;
+
+  return { decision, confidence, triggeredRules: sortedTriggered, trace };
 }
+

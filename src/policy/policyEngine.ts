@@ -7,6 +7,7 @@ export type Decision = {
     id: string;
     title?: string;
     severity?: string;
+    priority?: number;
     decision: string;
     confidence?: number;
     reason?: string;
@@ -39,31 +40,22 @@ function matchObject(match: Record<string, any> | undefined, signals: Signals): 
   return { ok: true, reasons };
 }
 
-// Very small safe evaluator for expressions like:
+// Minimal safe evaluator for expressions like:
 // "p_value < 0.05 && uplift_pct > 2"
-// Supports: == != > >= < <= , numbers, strings in quotes, && ||, parentheses (basic)
+// Supports: == != > >= < <= , numbers, strings in quotes, && ||
 function evalWhen(expr: string | undefined, signals: Signals): { ok: boolean; reasons: string[] } {
   if (!expr || !expr.trim()) return { ok: true, reasons: ["no when expression"] };
 
   const reasons: string[] = [];
-
-  // Tokenize by space, keep operators
-  // We'll handle parentheses by just stripping them (simple but works for our patterns).
   const normalized = expr.replace(/[()]/g, " ").replace(/\s+/g, " ").trim();
-
-  // Split by logical ops
-  // We'll evaluate left-to-right with && and || (no precedence other than left-to-right).
-  // For our YAML policies it's enough; keep expressions simple.
   const parts = normalized.split(" ").filter(Boolean);
 
   function readValue(token: string): any {
     if (token in signals) return signals[token];
     if (/^-?\d+(\.\d+)?$/.test(token)) return Number(token);
-    // quoted string
     if ((token.startsWith('"') && token.endsWith('"')) || (token.startsWith("'") && token.endsWith("'"))) {
       return token.slice(1, -1);
     }
-    // raw
     return token;
   }
 
@@ -87,7 +79,6 @@ function evalWhen(expr: string | undefined, signals: Signals): { ok: boolean; re
     return cmp;
   }
 
-  // Parse pattern: <a> <op> <b> [&&/|| <a> <op> <b> ...]
   let i = 0;
   let acc: boolean | null = null;
   let pendingLogic: "&&" | "||" | null = null;
@@ -101,16 +92,10 @@ function evalWhen(expr: string | undefined, signals: Signals): { ok: boolean; re
 
     const res = evalComparison(a, op, b);
 
-    if (acc === null) {
-      acc = res;
-    } else if (pendingLogic === "&&") {
-      acc = acc && res;
-    } else if (pendingLogic === "||") {
-      acc = acc || res;
-    } else {
-      // If missing logic operator, treat as AND
-      acc = acc && res;
-    }
+    if (acc === null) acc = res;
+    else if (pendingLogic === "&&") acc = acc && res;
+    else if (pendingLogic === "||") acc = acc || res;
+    else acc = acc && res;
 
     const next = parts[i];
     if (next === "&&" || next === "||") {
@@ -124,48 +109,85 @@ function evalWhen(expr: string | undefined, signals: Signals): { ok: boolean; re
   return { ok: Boolean(acc), reasons };
 }
 
+function severityRank(sev?: string): number {
+  const s = String(sev || "INFO").toUpperCase();
+  const map: Record<string, number> = {
+    CRITICAL: 5,
+    HIGH: 4,
+    WARN: 3,
+    MEDIUM: 2,
+    LOW: 1,
+    INFO: 1,
+  };
+  return map[s] ?? 1;
+}
+
 export function evaluatePolicies(doc: PolicyDoc, signals: Signals): Decision {
   const triggeredRules: Decision["triggeredRules"] = [];
   const trace: Decision["trace"] = [];
 
   for (const rule of doc.rules) {
-    const m = matchObject(rule.match, signals);
-    const w = evalWhen(rule.when, signals);
+    const m = matchObject((rule as any).match, signals);
+    const w = evalWhen((rule as any).when, signals);
 
     const matched = m.ok && w.ok;
 
     trace.push({
-      ruleId: rule.id,
+      ruleId: (rule as any).id,
       matched,
       reasons: [...m.reasons, ...w.reasons],
     });
 
     if (matched) {
       triggeredRules.push({
-        id: rule.id,
-        title: rule.title,
-        severity: rule.severity,
-        decision: rule.then.decision,
-        confidence: rule.then.confidence,
-        reason: rule.reason,
-        evidence: rule.evidence,
+        id: (rule as any).id,
+        title: (rule as any).title,
+        severity: (rule as any).severity,
+        priority: typeof (rule as any).priority === "number" ? (rule as any).priority : 0,
+        decision: (rule as any).then?.decision,
+        confidence: (rule as any).then?.confidence,
+        reason: (rule as any).reason,
+        evidence: (rule as any).evidence,
       });
     }
   }
 
-  // Pick the "strongest" rule: CRITICAL > WARN > INFO, then highest confidence
-  const severityRank: Record<string, number> = { CRITICAL: 3, WARN: 2, INFO: 1 };
+  // Strongest rule:
+  // 1) highest priority
+  // 2) higher severity
+  // 3) higher confidence
   const best = triggeredRules
     .slice()
     .sort((a, b) => {
-      const sa = severityRank[a.severity || "INFO"] || 1;
-      const sb = severityRank[b.severity || "INFO"] || 1;
+      const pa = typeof a.priority === "number" ? a.priority : 0;
+      const pb = typeof b.priority === "number" ? b.priority : 0;
+      if (pb !== pa) return pb - pa;
+
+      const sa = severityRank(a.severity);
+      const sb = severityRank(b.severity);
       if (sb !== sa) return sb - sa;
+
       return (b.confidence || 0) - (a.confidence || 0);
     })[0];
 
   const decision = best?.decision || doc.defaultDecision;
   const confidence = best?.confidence ?? doc.defaultConfidence ?? 0.55;
 
-  return { decision, confidence, triggeredRules, trace };
+  // IMPORTANT: keep triggeredRules sorted for UI (top first)
+  const sortedTriggered = triggeredRules
+    .slice()
+    .sort((a, b) => {
+      const pa = typeof a.priority === "number" ? a.priority : 0;
+      const pb = typeof b.priority === "number" ? b.priority : 0;
+      if (pb !== pa) return pb - pa;
+
+      const sa = severityRank(a.severity);
+      const sb = severityRank(b.severity);
+      if (sb !== sa) return sb - sa;
+
+      return (b.confidence || 0) - (a.confidence || 0);
+    });
+
+  return { decision, confidence, triggeredRules: sortedTriggered, trace };
 }
+

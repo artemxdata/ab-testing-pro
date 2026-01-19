@@ -1,11 +1,13 @@
-import React, { useMemo } from "react";
+// src/ui/LLMInsightPanel.tsx
+import React, { useMemo, useState } from "react";
 import { fetchLlmInsights, isLlmEnabled } from "../core/llmClient";
+import ReactMarkdown from "react-markdown";
 
 type Props = {
   decision: string;
   confidence: number;
   signals: any;
-  policyResult?: any; // важно для proxy-режима
+  policyResult?: any;
 };
 
 function badge(level: string) {
@@ -29,10 +31,10 @@ export default function LLMInsightPanel({
     (Number.isFinite(confidence) ? confidence : 0) * 100
   );
 
-  // --- proxy mode state ---
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const [markdown, setMarkdown] = React.useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [markdown, setMarkdown] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false); // ✅ NEW
 
   const canCall = isLlmEnabled();
 
@@ -40,8 +42,9 @@ export default function LLMInsightPanel({
     try {
       setError(null);
       setLoading(true);
+
       const res = await fetchLlmInsights({ signals, policyResult });
-      setMarkdown(res?.markdown ?? "");
+      setMarkdown(res?.markdown ? String(res.markdown) : "");
     } catch (e: any) {
       setError(e?.message || String(e));
     } finally {
@@ -49,7 +52,33 @@ export default function LLMInsightPanel({
     }
   }
 
-  // --- demo summary (existing) ---
+  // ✅ NEW: copy handler
+  async function onCopy() {
+    try {
+      const text = (markdown ?? outputText ?? "").trim();
+      if (!text) return;
+
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    } catch (e) {
+      // fallback for older browsers
+      try {
+        const text = (markdown ?? outputText ?? "").trim();
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1200);
+      } catch {
+        // ignore
+      }
+    }
+  }
+
   const demoText = useMemo(() => {
     const s = signals || {};
     const uplift = Number.isFinite(s?.uplift_pct) ? s.uplift_pct : 0;
@@ -57,7 +86,6 @@ export default function LLMInsightPanel({
 
     const parts: string[] = [];
 
-    // 1) verdict-style line
     if (decision === "IMPLEMENT_TREATMENT" || decision === "IMPLEMENT") {
       parts.push(
         `Recommendation: **roll out Treatment B** (decision = ${decision}).`
@@ -76,14 +104,12 @@ export default function LLMInsightPanel({
       );
     }
 
-    // 2) quick metric readout
     parts.push(
       `Key metrics: uplift **${uplift.toFixed(1)}%**, p-value **${
         pv < 0.0001 ? "<0.0001" : pv.toFixed(4)
       }**, confidence **${confPct}%**.`
     );
 
-    // 3) governance hints
     const govFlags: string[] = [];
     if (s?.srm_level) govFlags.push(`SRM: ${s.srm_level}`);
     if (s?.roi_level) govFlags.push(`ROI: ${s.roi_level}`);
@@ -96,6 +122,8 @@ export default function LLMInsightPanel({
 
     return parts.join("\n\n");
   }, [decision, signals, confPct]);
+
+  const outputText = canCall ? (markdown ?? "") : demoText;
 
   return (
     <div className="rounded-3xl border border-slate-200/10 bg-slate-900/35 backdrop-blur shadow-xl">
@@ -131,16 +159,26 @@ export default function LLMInsightPanel({
               LOSS {String(signals?.expected_loss_level || "—").toUpperCase()}
             </span>
 
-            {/* button / demo badge */}
-            <div className="mt-1">
+            <div className="mt-1 flex gap-2">
               {canCall ? (
-                <button
-                  onClick={onGenerate}
-                  disabled={loading}
-                  className="px-3 py-2 rounded-xl border border-white/10 bg-white/10 hover:bg-white/15 text-xs font-semibold disabled:opacity-50"
-                >
-                  {loading ? "Generating…" : "Generate insights"}
-                </button>
+                <>
+                  <button
+                    onClick={onGenerate}
+                    disabled={loading}
+                    className="px-3 py-2 rounded-xl border border-white/10 bg-white/10 hover:bg-white/15 text-xs font-semibold disabled:opacity-50"
+                  >
+                    {loading ? "Generating…" : "Generate insights"}
+                  </button>
+
+                  {/* ✅ NEW: Copy button */}
+                  <button
+                    onClick={onCopy}
+                    disabled={!outputText || loading}
+                    className="px-3 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-semibold disabled:opacity-50"
+                  >
+                    {copied ? "Copied ✅" : "Copy summary"}
+                  </button>
+                </>
               ) : (
                 <span className="text-xs opacity-70">demo</span>
               )}
@@ -158,17 +196,15 @@ export default function LLMInsightPanel({
             </div>
           </div>
 
-          {/* error */}
-          {error ? (
-            <div className="mt-3 text-sm text-rose-200/90 whitespace-pre-wrap">
-              Error: {error}
-            </div>
-          ) : null}
-
-          {/* output */}
-          <pre className="mt-3 text-xs overflow-auto rounded-2xl p-4 bg-black/30 border border-white/10 whitespace-pre-wrap text-slate-200/90">
-            {canCall ? markdown || demoText : demoText}
-          </pre>
+          <div className="mt-3 text-sm leading-relaxed rounded-2xl p-4 bg-black/30 border border-white/10 text-slate-200/90">
+            {error ? (
+              <div className="text-rose-200/90 whitespace-pre-wrap">
+                Error: {error}
+              </div>
+            ) : (
+              <ReactMarkdown>{outputText}</ReactMarkdown>
+            )}
+          </div>
         </div>
 
         <details className="mt-4">

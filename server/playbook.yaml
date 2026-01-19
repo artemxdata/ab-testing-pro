@@ -1,0 +1,21 @@
+items:
+  - id: continue_low_power
+    decision: CONTINUE_TEST
+    when: [POWER_LOW, SRM_GREEN]
+    text: "Increase sample size to reach power ≥ 0.8 before making rollout decisions."
+
+  - id: continue_monitor_loss
+    decision: CONTINUE_TEST
+    when: [LOSS_YELLOW]
+    text: "Set guardrails on expected loss and monitor weekly; pause if loss turns RED."
+
+  - id: continue_effect_validation
+    decision: CONTINUE_TEST
+    when: [POWER_LOW]
+    text: "Validate uplift stability across segments to reduce false positives."
+
+  - id: implement_rollout
+    decision: IMPLEMENT_TREATMENT
+    when: [SRM_GREEN]
+    text: "Roll out gradually (10% → 50% → 100%) with SRM and ROI checks at each step."
+

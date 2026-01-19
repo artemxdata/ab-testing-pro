@@ -6,16 +6,16 @@ export function isLlmEnabled() {
 
 export async function fetchLlmInsights(payload) {
   const base = process.env.REACT_APP_LLM_PROXY_URL;
+
+  // Demo mode: keep API keys out of frontend builds
   if (!base) {
     return {
       mode: "demo",
-      summary:
-        "LLM insights are disabled in this demo build. Configure a proxy endpoint to enable live analysis.",
-      bullets: [
-        "No API keys are stored in the frontend.",
-        "To enable, set REACT_APP_LLM_PROXY_URL to your secure proxy.",
-        "The proxy can call DeepSeek/OpenAI/etc. server-side.",
-      ],
+      markdown:
+        "LLM insights are disabled in this demo build.\n\n" +
+        "- No API keys are stored in the frontend.\n" +
+        "- To enable live analysis, set `REACT_APP_LLM_PROXY_URL`.\n" +
+        "- The proxy can call DeepSeek/OpenAI/etc. server-side.",
     };
   }
 
@@ -31,11 +31,19 @@ export async function fetchLlmInsights(payload) {
     });
 
     if (!res.ok) {
-      throw new Error(`LLM proxy HTTP ${res.status}`);
+      const text = await res.text().catch(() => "");
+      throw new Error(
+        `LLM proxy HTTP ${res.status}${text ? `: ${text.slice(0, 200)}` : ""}`
+      );
     }
 
     const data = await res.json();
-    return data;
+
+    // Normalize shape for UI
+    return {
+      mode: data?.mode || "proxy",
+      markdown: String(data?.markdown ?? ""),
+    };
   } finally {
     clearTimeout(timeout);
   }
