@@ -1,138 +1,89 @@
 # Agentic Decision Intelligence Platform
 
-### Deterministic, Governed AI with LLM & RAG as Supporting Systems
+Deterministic, policy-driven decision intelligence with RAG and LLMs used strictly as advisory systems.
 
-> A production-minded MVP showcasing how to build **enterprise-safe agentic AI systems** where decisions are deterministic, explainable, and governed — while LLMs and RAG enhance reasoning, interpretation, and operational guidance.
+This repository demonstrates how to build **enterprise-safe agentic AI systems** where:
+
+* decisions are deterministic and reproducible,
+* governance rules are explicit and auditable,
+* SOPs and playbooks are first-class knowledge artifacts,
+* LLMs enhance understanding and guidance but never hold authority.
+
+The current implementation focuses on **A/B testing decision intelligence**, but the architecture is deliberately general and transferable to other enterprise domains.
 
 ---
 
 ## What This Project Is
 
-This repository represents a **hands-on architectural spike** into modern Agentic AI systems.
+This is not an “AI-first” demo.
 
-The goal is not to “add AI everywhere”, but to demonstrate **how AI systems should be designed when correctness, governance, and trust matter**.
+It is an **architecture-first MVP** designed to answer a practical question:
 
-The platform combines:
+> How should agentic systems be built when correctness, governance, auditability, and failure safety actually matter?
 
-* deterministic decision-making,
-* explicit policy evaluation,
-* SOP-driven knowledge retrieval (RAG),
-* constrained LLM reasoning,
-* full traceability and fallback safety,
-* containerized deployment.
+The system combines:
 
-The current use case is **A/B testing decision intelligence**, but the architecture is intentionally **general-purpose** and transferable to enterprise and industrial workflows.
+* deterministic policy evaluation,
+* governance-driven decision precedence,
+* SOP-based knowledge retrieval (RAG-lite),
+* constrained LLM reasoning via a secure proxy,
+* full decision traceability,
+* containerized, reproducible deployment.
 
----
-
-## Key Capabilities (What’s Actually Built)
-
-### Deterministic Decision Core
-
-* Decisions are produced by a **policy engine**, not by an LLM.
-* Policies are explicit, versioned, and auditable.
-* Outcomes are reproducible for the same inputs.
-* Each decision includes:
-
-  * final verdict,
-  * confidence score,
-  * triggered rules,
-  * full evaluation trace.
+LLMs are explicitly **supporting components**, not decision-makers.
 
 ---
 
-### Policy-Driven Governance
+## Core Architectural Principles
 
-* Decision logic is encoded as **YAML policies**.
-* Supports priority, severity, confidence, and escalation rules.
-* Enables:
+### Deterministic Authority
 
-  * governance overrides,
-  * risk-based escalation,
-  * human-in-the-loop workflows.
-* Designed to satisfy audit, compliance, and operational review.
+All final decisions are produced by a policy engine evaluating structured signals.
 
----
+LLMs cannot:
 
-### SOP & Playbook Layer (RAG)
+* change outcomes,
+* invent rules,
+* bypass governance constraints.
 
-* Operational knowledge is stored as **structured playbooks (Markdown / YAML)**.
-* Retrieved dynamically at runtime via a lightweight RAG mechanism.
-* Used to:
+### Explicit Governance
 
-  * contextualize decisions,
-  * guide explanations,
-  * surface risks and recommended actions.
-* Knowledge is **explicit, inspectable, and maintainable** — not hidden in model weights.
+Decision logic and escalation rules are encoded in versioned YAML policies.
 
----
+Governance signals (SRM, expected loss, ROI quality) can override statistical wins.
 
-### LLM as Advisory System (Not Authority)
+### SOP-Driven Knowledge (RAG)
 
-* LLMs are used **only after** a deterministic decision is made.
-* They provide:
+Operational guidance lives in curated Markdown/YAML playbooks.
 
-  * executive summaries,
-  * interpretation of signals,
-  * risk analysis,
-  * concrete next steps.
-* LLMs **cannot**:
+Knowledge is:
 
-  * change decisions,
-  * invent rules,
-  * bypass policies.
+* explicit,
+* inspectable,
+* reviewable,
+* retrieved dynamically at runtime.
 
-This enforces a clean separation between **authority and reasoning**.
+Nothing critical is hidden inside model weights.
 
----
+### LLM as Advisory Layer
 
-### LLM Proxy Service (Enterprise-Safe)
+LLMs are invoked only **after** a deterministic decision is made.
 
-* All LLM calls go through a dedicated **proxy service**.
-* Features:
+They provide:
 
-  * provider abstraction (OpenRouter / ProxyAPI),
-  * model switching without UI changes,
-  * latency measurement,
-  * caching,
-  * graceful fallback on failures.
-* Prevents direct frontend access to API keys.
-* Designed for secure, controlled enterprise deployment.
+* executive summaries,
+* interpretation of signals,
+* risk analysis,
+* recommended next steps.
+
+If the LLM fails, the system still works.
 
 ---
 
-### Fallback & Safety by Design
-
-* If the LLM fails, times out, or is unavailable:
-
-  * the system still returns a valid decision,
-  * explanations degrade gracefully,
-  * no blocking or broken UX.
-* Deterministic logic is never coupled to probabilistic components.
-
----
-
-### Full Dockerized Stack
-
-The entire system runs via **Docker Compose**:
-
-* `web` — React UI
-* `proxy` — Node.js LLM proxy
-
-One command to run everything:
-
-```bash
-docker compose up
-```
-
-No local Node or dependency setup required.
-
----
-
-## High-Level Architecture
+## High-Level Flow
 
 ```
-Signals / Metrics
+Signals / Experiment Data
         ↓
 Signal Normalization
         ↓
@@ -140,113 +91,176 @@ Deterministic Policy Engine
         ↓
 Decision + Confidence + Trace
         ↓
-Playbook / SOP Retrieval (RAG)
+SOP / Playbook Retrieval (RAG)
         ↓
-LLM Advisory Layer
-        ↓
-Human-Readable Explanation & Guidance
+LLM Advisory Summary (optional)
 ```
 
 ---
 
-## API Overview
+## Quick Start (Docker / Local Demo)
 
-### `POST /insights`
+This project is fully containerized and can be run locally in **one command** using Docker Compose.
 
-#### Input
+### Prerequisites
 
-```json
-{
-  "signals": {
-    "p_value": 0.03,
-    "uplift_pct": 4.2,
-    "srm_level": "GREEN",
-    "roi_level": "GREEN",
-    "expected_loss_level": "YELLOW",
-    "alpha": 0.05
-  },
-  "policyResult": {
-    "decision": "IMPLEMENT_TREATMENT",
-    "confidence": 0.9,
-    "triggeredRules": [{ "id": "IMPLEMENT_GOOD" }]
-  }
-}
-```
+* Docker >= 24
+* Docker Compose v2
 
-#### Output
+Verify:
 
-```json
-{
-  "decision": "IMPLEMENT_TREATMENT",
-  "confidence": 0.9,
-  "latency_ms": 2100,
-  "model": "allenai/molmo-2-8b:free",
-  "markdown": "Executive summary, risks, and next actions"
-}
+```bash
+docker --version
+docker compose version
 ```
 
 ---
 
-## Why This Architecture Matters
+### 1. Clone the repository
 
-Most AI systems today:
-
-* rely on opaque probabilistic decisions,
-* lack traceability,
-* are difficult to govern or audit,
-* break under real operational constraints.
-
-This project demonstrates a different pattern:
-
-**Deterministic systems enhanced by AI — not replaced by it.**
-
-The same approach applies to:
-
-* manufacturing quality gates,
-* incident triage,
-* compliance workflows,
-* operational escalation systems,
-* autonomous enterprise agents.
-
----
-
-## Deployment & Environment
-
-Secrets are never committed.
-
-A safe template is provided:
-
-```
-.env.example
-```
-
-Required:
-
-```
-PROXYAPI_KEY=your_key_here
+```bash
+git clone https://github.com/artemxdata/ab-testing-pro.git
+cd ab-testing-pro
 ```
 
 ---
 
-## Project Status
+### 2. Configure environment variables
 
-This repository is an architecture-validating MVP.
+Create a local `.env` file from the example:
 
-It intentionally focuses on:
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and set your ProxyAPI key:
+
+```env
+PROXYAPI_KEY=PASTE_YOUR_KEY_HERE
+PROXYAPI_BASE_URL=https://api.proxyapi.ru/openrouter/v1
+PROXYAPI_MODEL=allenai/molmo-2-8b:free
+```
+
+Important notes:
+
+* `.env` is gitignored
+* API keys are never exposed to the frontend
+* The UI communicates only with the local proxy service
+
+---
+
+### 3. Start the full stack
+
+```bash
+docker compose up --build
+```
+
+This launches two services:
+
+| Service | Description                                       | Port |
+| ------- | ------------------------------------------------- | ---- |
+| web     | React UI (A/B testing dashboard)                  | 3000 |
+| proxy   | LLM Proxy (policy-safe, cached, fallback-enabled) | 8787 |
+
+---
+
+### 4. Open the application
+
+UI:
+
+```
+http://localhost:3000/ab-testing-pro
+```
+
+Proxy health check:
+
+```
+http://localhost:8787/health
+```
+
+---
+
+### 5. Test the LLM proxy directly (optional)
+
+```bash
+curl -X POST http://localhost:8787/insights \
+  -H "Content-Type: application/json" \
+  -d '{
+    "signals": {
+      "p_value": 0.03,
+      "uplift_pct": 4.2,
+      "srm_level": "GREEN",
+      "roi_level": "GREEN",
+      "expected_loss_level": "YELLOW"
+    },
+    "policyResult": {
+      "decision": "IMPLEMENT_TREATMENT",
+      "confidence": 0.9,
+      "triggeredRules": [{"id": "IMPLEMENT_GOOD"}]
+    }
+  }'
+```
+
+---
+
+### 6. Docker networking model (important)
+
+Inside Docker, the frontend calls the proxy via:
+
+```
+http://proxy:8787
+```
+
+Not `localhost`.
+
+This keeps API keys isolated and mirrors real production deployment patterns.
+
+---
+
+### 7. Stop and clean up
+
+```bash
+docker compose down -v
+```
+
+---
+
+## Why Docker Matters Here
+
+* Reproducible demo for reviewers and stakeholders
+* Zero local Node or React setup
+* Clean separation of concerns:
+
+  * UI is stateless
+  * Proxy is secure and key-protected
+* Matches real enterprise deployment constraints
+
+This is not a toy demo. It is a portable, governed agentic decision system.
+
+---
+
+## Repository Status
+
+This project is an architecture-validating MVP.
+
+It focuses on:
 
 * correct agent boundaries,
-* enterprise-safe AI patterns,
-* scalable foundations for autonomous workflows.
+* deterministic decision authority,
+* governance-first design,
+* safe failure modes,
+* enterprise-aligned deployment patterns.
 
-It is designed to be extended — not rewritten.
-
----
-
-## Author Note
-
-Built as a practical exploration of agentic AI, deterministic decision systems, and governed LLM integration, with a strong emphasis on correctness, safety, and real-world deployability.
+It is designed to be extended, not rewritten.
 
 ---
 
-**created by artemxdata**
+## Further Reading
 
+* `ARCHITECTURE.md` — detailed system design and trust model
+* `public/policies.yaml` — deterministic decision rules
+* `server/` — LLM proxy and SOP retrieval
+
+---
+
+created by artemxdata
