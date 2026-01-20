@@ -1,13 +1,18 @@
 {
-  "name": "ab-testing-pro",
+  "name": "ab-governance-engine",
   "version": "2.0.0",
   "private": false,
-  "description": "🎯 Professional A/B Testing Tool with ML Predictions, Bayesian Analysis & ROI Calculations",
+  "description": "Policy-driven A/B testing decision engine with governance signals, deterministic rules, and optional LLM copilot via secure proxy",
   "keywords": [
     "ab-testing",
+    "governance",
+    "decision-engine",
+    "policy-as-code",
+    "agentic",
+    "llm",
+    "openrouter",
     "statistics",
     "bayesian",
-    "machine-learning",
     "data-science",
     "analytics",
     "conversion-optimization",
@@ -21,10 +26,10 @@
   "homepage": "https://artemxdata.github.io/ab-testing-pro",
   "repository": {
     "type": "git",
-    "url": "https://github.com/artemxdata/ab-testing-pro.git"
+    "url": "https://github.com/artemxdata/AB-Governance-Engine.git"
   },
   "bugs": {
-    "url": "https://github.com/artemxdata/ab-testing-pro/issues"
+    "url": "https://github.com/artemxdata/AB-Governance-Engine/issues"
   },
   "license": "MIT",
   "engines": {
