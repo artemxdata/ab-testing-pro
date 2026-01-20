@@ -1,0 +1,28 @@
+services:
+  proxy:
+    build: ./server
+    env_file:
+      - .env
+    ports:
+      - "8787:8787"
+    environment:
+      PORT: 8787
+      PROXYAPI_BASE_URL: ${PROXYAPI_BASE_URL:-https://api.proxyapi.ru/openrouter/v1}
+      PROXYAPI_MODEL: ${PROXYAPI_MODEL:-allenai/molmo-2-8b:free}
+      OPENROUTER_REFERER: ${OPENROUTER_REFERER:-http://localhost:3000}
+      OPENROUTER_TITLE: ${OPENROUTER_TITLE:-ab-testing-pro}
+
+  web:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+      REACT_APP_LLM_PROXY_URL: http://proxy:8787
+    command: sh -lc "npm ci && npm start"
+    depends_on:
+      - proxy
