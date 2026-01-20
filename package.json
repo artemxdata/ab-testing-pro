@@ -18,11 +18,6 @@
     "roi-analysis",
     "statistical-analysis"
   ],
-  "author": {
-    "name": "Your Name",
-    "email": "your.email@example.com",
-    "url": "https://github.com/yourusername"
-  },
   "homepage": "https://artemxdata.github.io/ab-testing-pro",
   "repository": {
     "type": "git",
@@ -37,13 +32,6 @@
     "npm": ">=8.0.0"
   },
   "dependencies": {
-    "@testing-library/jest-dom": "^5.16.5",
-    "@testing-library/react": "^13.4.0",
-    "@testing-library/user-event": "^13.5.0",
-    "@types/jest": "^27.5.2",
-    "@types/node": "^16.18.0",
-    "@types/react": "^18.0.25",
-    "@types/react-dom": "^18.0.9",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.1",
     "lucide-react": "^0.263.1",
@@ -53,22 +41,29 @@
     "react-markdown": "^10.1.0",
     "react-scripts": "5.0.1",
     "recharts": "^2.8.0",
-    "typescript": "^4.9.4",
     "web-vitals": "^3.1.0",
     "xlsx": "^0.18.5",
     "yaml": "^2.8.2"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^5.16.5",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^13.5.0",
+    "@types/jest": "^27.5.2",
+    "@types/node": "^16.18.0",
+    "@types/react": "^18.0.25",
+    "@types/react-dom": "^18.0.9",
     "autoprefixer": "^10.4.23",
     "eslint": "^8.28.0",
     "eslint-plugin-react": "^7.31.11",
     "eslint-plugin-react-hooks": "^4.6.0",
-    "gh-pages": "^4.0.0",
+    "gh-pages": "^6.0.0",
     "postcss": "^8.5.6",
     "raw-loader": "^4.0.2",
     "source-map-explorer": "^2.5.3",
     "tailwindcss": "^3.4.19",
-    "tsx": "^4.21.0"
+    "tsx": "^4.21.0",
+    "typescript": "^4.9.4"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -79,9 +74,6 @@
     "deploy": "gh-pages -d build",
     "analyze": "npm run build && npx source-map-explorer 'build/static/js/*.js'",
     "serve": "npx serve -s build -l 3000",
-    "clean": "rm -rf build node_modules package-lock.json",
-    "reinstall": "npm run clean && npm install",
-    "update-deps": "npx npm-check-updates -u && npm install",
     "test:ci": "react-scripts test --watchAll=false"
   },
   "eslintConfig": {
@@ -119,3 +111,4 @@
     }
   }
 }
+
