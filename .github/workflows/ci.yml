@@ -2,8 +2,8 @@ name: ci
 
 on:
   push:
-    branches: ["**"]
-  pull_request:
+    branches-ignore:
+      - gh-pages
 
 jobs:
   test-build:
