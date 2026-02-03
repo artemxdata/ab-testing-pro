@@ -1,0 +1,146 @@
+{
+  "short_name": "A/B Testing Pro",
+  "name": "A/B Testing Pro - Professional Statistical Analysis Tool",
+  "description": "Advanced A/B testing tool with ML predictions, Bayesian analysis, and ROI calculations for data scientists and growth teams",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "icon-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "icon-256x256.png",
+      "type": "image/png",
+      "sizes": "256x256",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-384x384.png",
+      "type": "image/png",
+      "sizes": "384x384",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable any"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "theme_color": "#3B82F6",
+  "background_color": "#F8FAFC",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": [
+    "business",
+    "productivity",
+    "utilities",
+    "developer"
+  ],
+  "screenshots": [
+    {
+      "src": "screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "platform": "wide",
+      "label": "A/B Testing Pro Dashboard on Desktop"
+    },
+    {
+      "src": "screenshot-mobile.png", 
+      "sizes": "375x812",
+      "type": "image/png",
+      "platform": "narrow",
+      "label": "A/B Testing Pro on Mobile"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New A/B Test",
+      "short_name": "New Test",
+      "description": "Create a new A/B test analysis",
+      "url": "/?tab=planning",
+      "icons": [
+        {
+          "src": "shortcut-new-test.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Analytics Dashboard", 
+      "short_name": "Dashboard",
+      "description": "View real-time analytics dashboard",
+      "url": "/?tab=dashboard",
+      "icons": [
+        {
+          "src": "shortcut-dashboard.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "ML Predictions",
+      "short_name": "ML Insights", 
+      "description": "AI-powered test predictions",
+      "url": "/?tab=ml",
+      "icons": [
+        {
+          "src": "shortcut-ml.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "handle_links": "preferred",
+  "protocol_handlers": [
+    {
+      "protocol": "web+abtest",
+      "url": "/analyze?data=%s"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "/import",
+      "accept": {
+        "text/csv": [".csv"],
+        "application/json": [".json"],
+        "application/vnd.ms-excel": [".xlsx", ".xls"]
+      }
+    }
+  ],
+  "share_target": {
+    "action": "/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "data_file",
+          "accept": ["text/csv", "application/json", ".xlsx"]
+        }
+      ]
+    }
+  }
+}

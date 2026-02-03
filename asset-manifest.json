@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/AB-Governance-Engine/static/css/main.8f07b46a.css",
+    "main.js": "/AB-Governance-Engine/static/js/main.b31c7f9c.js",
+    "index.html": "/AB-Governance-Engine/index.html",
+    "main.8f07b46a.css.map": "/AB-Governance-Engine/static/css/main.8f07b46a.css.map",
+    "main.b31c7f9c.js.map": "/AB-Governance-Engine/static/js/main.b31c7f9c.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.8f07b46a.css",
+    "static/js/main.b31c7f9c.js"
+  ]
+}

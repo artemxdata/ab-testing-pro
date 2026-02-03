@@ -1,0 +1,120 @@
+version: "2.3"
+defaultDecision: "CONTINUE_TEST"
+defaultConfidence: 0.55
+
+# Precedence (enforced by priority):
+# 1) Governance (SRM, expected loss, ROI) -> ESCALATE
+# 2) Significant negative -> REJECT_TREATMENT
+# 3) Significant positive + practical effect + governance ok -> IMPLEMENT_TREATMENT
+# 4) Otherwise -> CONTINUE_TEST
+
+rules:
+  # --------------------
+  # Governance / Quality (must override everything)
+  # --------------------
+  - id: "GOV_SRM_RED"
+    title: "Sample Ratio Mismatch detected"
+    severity: "CRITICAL"
+    priority: 1000
+    match:
+      srm_level: "RED"
+    then:
+      decision: "ESCALATE"
+      confidence: 0.95
+    reason: "Traffic split/assignment likely broken. Results are not trustworthy until instrumentation is fixed."
+    evidence:
+      - "srm_level == RED"
+
+  - id: "GOV_EXPECTED_LOSS_RED"
+    title: "Expected loss too high"
+    severity: "HIGH"
+    priority: 950
+    match:
+      expected_loss_level: "RED"
+    then:
+      decision: "ESCALATE"
+      confidence: 0.85
+    reason: "Downside risk is high. Validate assumptions, run longer, or segment before rollout."
+    evidence:
+      - "expected_loss_level == RED"
+
+  - id: "GOV_ROI_RED"
+    title: "ROI is negative"
+    severity: "HIGH"
+    priority: 940
+    when: 'roi_level == "RED"'
+    then:
+      decision: "ESCALATE"
+      confidence: 0.85
+    reason: "ROI is negative. Double-check assumptions, costs, and segment results before rollout."
+    evidence:
+      - 'roi_level == "RED"'
+
+  # --------------------
+  # Significant negative
+  # --------------------
+  - id: "NEGATIVE_SIGNIFICANT"
+    title: "Treatment B is significantly worse"
+    severity: "HIGH"
+    priority: 700
+    when: "p_value < alpha && uplift_pct < 0"
+    then:
+      decision: "REJECT_TREATMENT"
+      confidence: 0.90
+    reason: "Statistically significant negative impact detected. Reject treatment B."
+    evidence:
+      - "p_value < alpha"
+      - "uplift_pct < 0"
+
+  # --------------------
+  # Significant positive (ONLY if governance is OK)
+  # --------------------
+  - id: "POSITIVE_SIGNIFICANT_GOV_OK"
+    title: "Treatment B is significantly better (governance ok)"
+    severity: "HIGH"
+    priority: 650
+    when: 'p_value < alpha && uplift_pct > 0 && effect_size_level != "RED" && srm_level != "RED" && expected_loss_level != "RED" && roi_level != "RED"'
+    then:
+      decision: "IMPLEMENT_TREATMENT"
+      confidence: 0.90
+    reason: "Significant positive uplift with practical effect size and no governance red flags."
+    evidence:
+      - "p_value < alpha"
+      - "uplift_pct > 0"
+      - 'effect_size_level != "RED"'
+      - 'srm_level != "RED"'
+      - 'expected_loss_level != "RED"'
+      - 'roi_level != "RED"'
+      
+  - id: "IMPLEMENT_GOOD"
+    title: "Implement: significant uplift with governance OK"
+    severity: "HIGH"
+    priority: 650
+    when: 'p_value < 0.05 && uplift_pct > 0 && effect_size_level != "RED" && srm_level != "RED" && expected_loss_level != "RED" && roi_level != "RED"'
+    then:
+      decision: "IMPLEMENT_TREATMENT"
+      confidence: 0.9
+    reason: "Statistically significant win with practical effect, governance OK."
+    evidence:
+      - "p_value < 0.05"
+      - "uplift_pct > 0"
+      - "effect_size_level != RED"
+      - "srm_level != RED"
+      - "expected_loss_level != RED"
+      - "roi_level != RED"
+
+  # --------------------
+  # Not significant -> continue
+  # --------------------
+  - id: "NOT_SIGNIFICANT"
+    title: "Not statistically significant yet"
+    severity: "MEDIUM"
+    priority: 100
+    when: "p_value >= alpha"
+    then:
+      decision: "CONTINUE_TEST"
+      confidence: 0.70
+    reason: "Not statistically significant yet. Continue the test or increase sample size."
+    evidence:
+      - "p_value >= alpha"
+
